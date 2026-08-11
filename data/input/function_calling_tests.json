@@ -1,11 +1,3 @@
 [
-  {
-    "prompt": "sum of 2 and 40"
-  },
-  {
-    "prompt": "capital of mroco"
-  },
-  {
-    "prompt": "print hello, world!"
-  }
+	{"hello": 8}
 ]

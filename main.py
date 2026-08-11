@@ -1,16 +1,20 @@
 from pathlib import Path
-import json
-import sys
-#import parser_func_call_tests
+from parsing import ParsingContent, validate_tests, validate_def
+from pydantic import ValidationError
+
 
 def main():
     print("Hello from call-me-maybe!")
-    with open("data/input/function_calling_tests.json") as tests:
-        function_calling_data = json.load(tests)
+    try:
+        validate_tests("data/input/function_calling_tests.json")
+        validate_def("data/input/function_definition.json")
 
-    print(type(function_calling_data))
-    for element in function_calling_data:
-        print(element)
+    except ValidationError as e:
+        print(f"Error: {e.errors()[0]['msg'].strip('Value error, ')}")
+
+    except ValueError as e:
+        print(e)
+
 
 if __name__ == "__main__":
     main() 
