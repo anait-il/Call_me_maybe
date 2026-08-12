@@ -1,6 +1,5 @@
-from pydantic import BaseModel, ConfigDict, model_validator
-from typing import Dict, List, Any
-from enum import Enum
+from pydantic import BaseModel, ValidationError, model_validator
+from typing import Dict, List
 import os
 import json
 
@@ -12,14 +11,39 @@ class ParsingContent(BaseModel):
     def check(self):
         for key, value in self.content.items():
             if key != 'prompt':
-                raise ValueError(f"Error in test file: Invalid Key {key}")
+                raise ValueError(f"Error in prompts file: expected 'prompt' got '{key}'")
 
             if not isinstance(value, str):
-                raise ValueError("Error in test file: The value must be string")
+                raise ValueError("Error in prompts file: The value must be string")
 
             if not value.strip():
-                raise ValueError("Error in test file: They must not be empty")
+                raise ValueError("Error in prompts file: They must not be empty")
         return self
+
+def validate_tests(file: str)-> None:
+    if not os.path.getsize(file):
+        raise ValueError("empty file")
+    with open(file) as f:
+        data = json.load(f)
+        if not data:
+            raise ValueError("Error in prompts file: Invalid data (empty list)")
+        for item in data:
+            if not item:
+                raise ValueError("Error in prompts file: Invalid data (empty dict)")
+
+    if not isinstance(data, list):
+        data = [data]
+
+    for cotent in data:
+        try:
+            ParsingContent(content=cotent)
+
+        except ValidationError as e:
+            print(f"Error Invalide type: {e.errors()[0]['msg'].strip('Value error, ')}")
+            raise
+        except ValueError as e:
+            print(e)
+            raise
 
 
 class ParsingDefinition(BaseModel):
@@ -33,11 +57,9 @@ class ParsingDefinition(BaseModel):
                 raise ValueError(f"Error: Invalide key '{key}'")
             if not value:
                 raise ValueError("Error: empty value")
-
             if key.lower() == "name" or key.lower() == "description":
                 if not isinstance(value, str):
                     raise ValueError(f"Error Invalide type for {key}: expected string got '{value}'")
-
             if key.lower() == "parameters":
                 if not isinstance(value, Dict):
                     raise ValueError("Error: parameters must be a dict")
@@ -45,6 +67,7 @@ class ParsingDefinition(BaseModel):
 
 
     def check_parameter(param: Dict[str, Dict[str, str]]) -> int:
+        print(param)
         for key, value in param:
             types: List[str] = ["number", "integer", "string", "bool"]
             if not isinstance(key, str):
@@ -61,7 +84,6 @@ class ParsingDefinition(BaseModel):
 
 
 def validate_def(file: str)-> None:
-
     if not os.path.getsize(file):
         raise ValueError("empty file")
     with open(file) as f:
@@ -71,28 +93,14 @@ def validate_def(file: str)-> None:
         for item in data:
             if not item:
                 raise ValueError("Error in definitions file: Invalid data (empty dict)")
-
     if not isinstance(data, list):
         data = [data]
-
     for cotent in data:
-        ParsingDefinition(content=cotent)
-
-
-def validate_tests(file: str)-> None:
-
-    if not os.path.getsize(file):
-        raise ValueError("empty file")
-    with open(file) as f:
-        data = json.load(f)
-        if not data:
-            raise ValueError("Error in test file: Invalid data (empty list)")
-        for item in data:
-            if not item:
-                raise ValueError("Error in test filse: Invalid data (empty dict)")
-
-    if not isinstance(data, list):
-        data = [data]
-
-    for cotent in data:
-        ParsingContent(content=cotent)
+        try:
+            ParsingDefinition(content=cotent)
+        except ValidationError as e:
+            print(f"Error Invalid type: expected 'Dict[str, str]' got {e.errors()[0]['input']}")
+            raise
+        except ValueError as e:
+            print(e)
+            raise
