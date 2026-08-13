@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ValidationError, model_validator
-from typing import Dict, List
+from typing import Dict, List, Any
 import os
 import json
 
@@ -47,10 +47,10 @@ def validate_tests(file: str)-> None:
 
 
 class ParsingDefinition(BaseModel):
-    content: Dict[str, str]
+    content: Dict[str, Any]
 
     @model_validator(mode="after")
-    def check(self):
+    def check(self)-> None:
         keys: List[str] = ["name", "description", "parameters", "returns"]
         for key, value in self.content.items():
             if key.lower() not in keys:
@@ -63,11 +63,11 @@ class ParsingDefinition(BaseModel):
             if key.lower() == "parameters":
                 if not isinstance(value, Dict):
                     raise ValueError("Error: parameters must be a dict")
-                self.check_parameter(value)
+                # self.check_parameter(value)
+        return self
 
 
-    def check_parameter(param: Dict[str, Dict[str, str]]) -> int:
-        print(param)
+    def check_parameter(self, param: Dict[str, Dict[str, str]]) -> int:
         for key, value in param:
             types: List[str] = ["number", "integer", "string", "bool"]
             if not isinstance(key, str):
@@ -99,7 +99,7 @@ def validate_def(file: str)-> None:
         try:
             ParsingDefinition(content=cotent)
         except ValidationError as e:
-            print(f"Error Invalid type: expected 'Dict[str, str]' got {e.errors()[0]['input']}")
+            print(f"Error Invalid type: expected 'Dict[str, Any]'")
             raise
         except ValueError as e:
             print(e)
