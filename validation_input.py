@@ -6,14 +6,14 @@ from pydantic import ValidationError
 
 def validate_prompt(file: str)-> None:
     if not os.path.getsize(file):
-        raise ValueError("empty file")
+        raise ValueError("[Error] empty file")
     with open(file) as f:
         data = json.load(f)
         if not data:
-            raise ValueError("Error in prompts file: Invalid data (empty list)")
+            raise ValueError("[Error] in prompts file: Invalid data (empty list)")
         for item in data:
             if not item:
-                raise ValueError("Error in prompts file: Invalid data (empty dict)")
+                raise ValueError("[Error] in prompts file: Invalid data (empty dict)")
 
     if not isinstance(data, list):
         data = [data]
@@ -23,7 +23,9 @@ def validate_prompt(file: str)-> None:
             ParsingContent(content=cotent)
 
         except ValidationError as e:
-            print(f"Error Invalide type: {e.errors()[0]['msg'].strip('Value error, ')}")
+            print(f"[Error] Invalide type: {e.errors()[0]['msg'].strip('Value error, ')}, "
+                  "expected dict[str, str]"
+        )
             raise
         except ValueError as e:
             print(e)
@@ -46,8 +48,8 @@ def validate_def(file: str)-> None:
         try:
             ParsingDefinition(content=content)
         except ValidationError as e:
-            print(f"Error {e.errors()[0]['msg'].split('Value error, ')[1]}")
+            print(f"[Error] {e.errors()[0]['msg'].split('Value error, ')[1]}")
             raise
         except ValueError as e:
-            print(f"Error {e}")
+            print(f"[Error] {e}")
             raise

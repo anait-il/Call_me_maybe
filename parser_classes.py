@@ -40,6 +40,11 @@ class ParsingDefinition(BaseModel):
             "returns"
         ]
 
+        if len(self.content) < 4:
+            raise ValueError("Invalide function definition: "
+                             "missid argument/arguments"
+            )
+
         for key, value in self.content.items():
 
             if key.lower() not in keys:
@@ -102,7 +107,7 @@ class ParsingDefinition(BaseModel):
 
 
     def check_param_type(self, type: Dict[str, str], parameter_name: str):
-        allowed_types = ["number", "integer", "string", "bool"]
+        allowed_types = ["number", "integer", "string", "boolean"]
 
         for key, value in type.items():
 
