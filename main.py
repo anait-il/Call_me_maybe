@@ -33,22 +33,22 @@ def main():
     try:
         prompts: Dict[str, str] = validate_prompt("data/input/function_calling_tests.json")
         functions: Dict[str, Any] = validate_def("data/input/functions_definition.json")
-
     except (ValueError, ValidationError):
-        pass
+        exit(1)
 
+    print(functions)
     model = Small_LLM_Model()
     fc = [func['name'] for func in functions]
-    output = []
+    output = ''
     for prompt in prompts:
         tokens: List[int] = np.array(model.encode(build_prompt(prompt['prompt'], fc))).tolist()
-        while len(output) < len(max(fc)):
+        while True:
             logit = model.get_logits_from_input_ids(tokens[0]) # list of the tokens with scores
             next_id = np.argmax(logit) # id of next char
-            output += [next_id]
+            output += model.decode([next_id])
             tokens[0] += [next_id]
-
-        print(model.decode(output))
+            print("##" * 20, end='\n\n')
+            print(output)
 
 
 if __name__ == "__main__":
