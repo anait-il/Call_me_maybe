@@ -2,9 +2,10 @@ import os
 import json
 from parser_classes import ParsingContent, ParsingDefinition
 from pydantic import ValidationError
+from typing import Dict, Any
 
 
-def validate_prompt(file: str)-> None:
+def validate_prompt(file: str)-> Dict[str, str]:
     if not os.path.getsize(file):
         raise ValueError("[Error] empty file")
     with open(file) as f:
@@ -31,8 +32,10 @@ def validate_prompt(file: str)-> None:
             print(e)
             raise
 
+    return data
 
-def validate_def(file: str)-> None:
+
+def validate_def(file: str)-> Dict[str, Any]:
     if not os.path.getsize(file):
         raise ValueError("empty file")
     with open(file) as f:
@@ -53,3 +56,5 @@ def validate_def(file: str)-> None:
         except ValueError as e:
             print(f"[Error] {e}")
             raise
+
+    return data

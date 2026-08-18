@@ -12,5 +12,25 @@
     "returns": {
       "type": "number"
     }
+  },
+  {
+    "name": "capital of moroco",
+    "description": "get the capital of moroco.",
+
+    "parameters": {
+      "a": {
+        "type": "integer"
+      }
+    }
+  },
+  {
+    "name": "fn_print_hello",
+    "description": "print hello.",
+
+    "parameters": {
+      "a": {
+        "type": "number"
+      }
+    }
   }
 ]
