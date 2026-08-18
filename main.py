@@ -36,7 +36,6 @@ def main():
     except (ValueError, ValidationError):
         exit(1)
 
-    print(functions)
     model = Small_LLM_Model()
     fc = [func['name'] for func in functions]
     output = ''
