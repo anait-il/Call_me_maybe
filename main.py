@@ -16,7 +16,7 @@ def main():
     function_name = FunctionName(model,
                                  parser.prompts,
                                  parser.functions_definition)
-    function_name.get_function_name()
+    function_name.generate_function_name()
 
 
 if __name__ == "__main__":

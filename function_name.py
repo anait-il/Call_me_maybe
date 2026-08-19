@@ -1,4 +1,5 @@
 import numpy as np
+from itertools import count
 from typing import Dict, List, Any
 from llm_sdk import Small_LLM_Model
 
@@ -11,46 +12,69 @@ class FunctionName:
         self.model: Small_LLM_Model = model
         self.prompts: Dict[str, str] = prompts
         self.functions_definition: Dict[str, Any] = functions_definition
+        self.available_functions: List[str] = [func['name'] for func in self.functions_definition]
+        self.functions_token: List[List[int]] = [np.array(self.model.encode(x))[0].tolist() for x in self.available_functions] 
 
-    def get_function_name(self)-> str:
+    def set_allowed_ids(self, index: int)-> List[int]:
 
-        available_functions = [func['name'] for func in self.functions_definition]
+        ids: List[int] = []
+
+        for tokens in self.functions_token:
+            if len(tokens) > index:
+
+                ids.append(tokens[index])
+
+        return ids
+
+    def get_function_name(self, prompt: str)-> str: 
+
+        output: str = ""
+        
+        tokens: List[int] = np.array(self.model.encode(
+            self.build_prompt(prompt)))[0].tolist()
+
+        for i, _ in enumerate(count()):
+            logits: List[float] = self.model.get_logits_from_input_ids(tokens)
+            mask: List[float] = np.full_like(logits, float("-inf"))
+            allowed_ids: List[int] = self.set_allowed_ids(i)
+            mask[allowed_ids] = 0
+            masked_logits = mask + logits
+            next_id = np.argmax(masked_logits)
+            output += self.model.decode([next_id])
+            if output in self.available_functions:
+                break
+
+            if len(output) >= len(max(self.available_functions)):
+                break
+
+            tokens.append(next_id)
+
+        return output
+
+    def generate_function_name(self)-> None:
 
         for prompt in self.prompts:
 
-            output = ''
-            tokens: List[int] = np.array(self.model.encode(
-                self.build_prompt(prompt['prompt'],
-                                  available_functions))).tolist()
-            allowed_ids: List[int] = np.array(self.model.encode(available_functions)).tolist()
+            output: str = self.get_function_name(prompt['prompt'])
+            print(output)
 
-            while True:
-
-                logits: List[float] = self.model.get_logits_from_input_ids(tokens[0])
-                mask: List[float] = np.full_like(logits, float('-inf'))
-                mask[allowed_ids] = 0
-                masked_logits = mask + logits
-                next_id = np.argmax(masked_logits)
-                output += self.model.decode([next_id])
-                if len(output) >= len(max(available_functions)):
-                    break
-                tokens[0] += [next_id]                
-                print("##" * 20, end='\n\n')
-                print(output)
-
-    def build_prompt(self, user_prompt: str, functions_list: List[str])-> str:
+    def build_prompt(self, user_prompt: str)-> str:
+        fn = []
+        for functoin in self.available_functions:
+            fn.append(self.functions_definition)
         return f"""
-            You are a function-calling assistant that
-            helps me get a function name from a user prompt.
+You are a function selector.
 
-            Available functions:
-            {functions_list}
+Your task:
+- Read the user request.
+- Choose the BEST function.
+- Return ONLY the function name.
+- Do not explain anything.
+- If no function matches, return: NONE
 
-            Example:
+avialable functions:
+{for func in self.available_functions:}
 
-            Prompt: "what is the sum of 1 and 2"
-
-            Answer: "fn_add_number"
-
-            User prompt: {user_prompt}
-        """
+user request:
+{user_prompt}
+"""
