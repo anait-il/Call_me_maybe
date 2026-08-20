@@ -71,12 +71,15 @@ You are a function selector.
 
 Your task:
 - Read the user request.
-- Choose the BEST function.
+- Choose the BEST function by reading the description.
 - Return ONLY the function name.
 - Do not explain anything.
 - If no function matches, return: NONE
 
-avialable functions:
+available functions:
+{self.available_functions}
+
+Description of the functions:
 {fn}
 
 user request:
