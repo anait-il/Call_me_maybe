@@ -2,7 +2,7 @@ import os
 import json
 from parser_classes import ParsingContent, ParsingDefinition
 from pydantic import ValidationError
-from typing import Dict, Any
+from typing import Dict, Any, List
 from argparse import ArgumentParser
 
 
@@ -11,8 +11,8 @@ class Parser:
     def _parse(self)-> None:
 
         self.get_args()
-        self.prompts: Dict[str, str] = self.validate_prompt(self.input)
-        self.functions_definition: Dict[str, Any] = self.validate_def(self.functions_definition_path)
+        self.prompts: List[Dict[str, str]] = self.validate_prompt(self.input)
+        self.functions_definition: List[Dict[str, Any]] = self.validate_def(self.functions_definition_path)
 
 
     def get_args(self)-> None:
@@ -29,7 +29,7 @@ class Parser:
         self.ouput: str = args.output
         self.functions_definition_path: str = args.functions_definition
 
-    def validate_prompt(self, file: str)-> Dict[str, str]:
+    def validate_prompt(self, file: str)-> List[Dict[str, str]]:
 
         if not os.path.getsize(file):
             raise ValueError("[Error] empty file")
@@ -60,7 +60,7 @@ class Parser:
         return data
 
 
-    def validate_def(self, file: str)-> Dict[str, Any]:
+    def validate_def(self, file: str)-> List[Dict[str, Any]]:
 
         if not os.path.getsize(file):
             raise ValueError("empty file")

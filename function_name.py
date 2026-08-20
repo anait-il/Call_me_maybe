@@ -10,10 +10,12 @@ class FunctionName:
                  prompts: Dict[str, str],
                  functions_definition: Dict[str, Any])-> None:
         self.model: Small_LLM_Model = model
-        self.prompts: Dict[str, str] = prompts
-        self.functions_definition: Dict[str, Any] = functions_definition
-        self.available_functions: List[str] = [func['name'] for func in self.functions_definition]
-        self.functions_token: List[List[int]] = [np.array(self.model.encode(x))[0].tolist() for x in self.available_functions] 
+        self.prompts: List[Dict[str, str]] = prompts
+        self.functions_definition: List[Dict[str, Any]] = functions_definition
+        self.available_functions: List[str] = [func['name']
+                                               for func in self.functions_definition]
+        self.functions_token: List[List[int]] = [np.array(self.model.encode(x))[0].tolist()
+                                                 for x in self.available_functions] 
 
     def set_allowed_ids(self, index: int)-> List[int]:
 
@@ -60,8 +62,10 @@ class FunctionName:
 
     def build_prompt(self, user_prompt: str)-> str:
         fn = []
-        for functoin in self.available_functions:
-            fn.append(self.functions_definition)
+        for function in self.functions_definition:
+
+            fn.append([function['name'], function['description']])
+
         return f"""
 You are a function selector.
 
@@ -73,7 +77,7 @@ Your task:
 - If no function matches, return: NONE
 
 avialable functions:
-{for func in self.available_functions:}
+{fn}
 
 user request:
 {user_prompt}
