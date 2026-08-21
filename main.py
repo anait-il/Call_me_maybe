@@ -1,8 +1,9 @@
 from validation_input import Parser
 from function_name import FunctionName
+from parameters_generator import Parameters
 from llm_sdk import Small_LLM_Model
 from pydantic import ValidationError
-from typing import List
+from typing import Dict, Any
 import numpy as np
 
 
@@ -13,10 +14,22 @@ def main():
     parser._parse()
 
     model = Small_LLM_Model()
-    function_name = FunctionName(model,
-                                 parser.prompts,
-                                 parser.functions_definition)
-    function_name.generate_function_name()
+    assembler: Dict[str, Any] = {
+        "name": None,
+        "parameters": None
+    }
+
+    for prompt in parser.prompts:
+        function_name = FunctionName(model,
+                                     prompt,
+                                     parser.functions_definition)
+        name = function_name.get_function_name(prompt)
+        parameters = Parameters(model, prompt, name, parser.functions_definition)
+        params = parameters.generate_parameter()
+        assembler["name"] = name
+        assembler["parameters"] = params
+        print("#" * 50)
+        print(assembler)
 
 
 if __name__ == "__main__":

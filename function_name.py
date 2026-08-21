@@ -7,10 +7,10 @@ class FunctionName:
 
     def __init__(self,
                  model: Small_LLM_Model,
-                 prompts: Dict[str, str],
-                 functions_definition: Dict[str, Any])-> None:
+                 prompt: Dict[str, str],
+                 functions_definition: List[Dict[str, Any]])-> None:
         self.model: Small_LLM_Model = model
-        self.prompts: List[Dict[str, str]] = prompts
+        self.prompt: Dict[str, str] = prompt
         self.functions_definition: List[Dict[str, Any]] = functions_definition
         self.available_functions: List[str] = [func['name']
                                                for func in self.functions_definition]
@@ -53,18 +53,18 @@ class FunctionName:
 
         return output
 
-    def generate_function_name(self)-> None:
+    #def generate_function_name(self)-> None:
 
-        for prompt in self.prompts:
+    #    for prompt in self.prompts:
 
-            output: str = self.get_function_name(prompt['prompt'])
-            print(output)
+    #        output: str = self.get_function_name(prompt['prompt'])
+    #        print(output)
 
     def build_prompt(self, user_prompt: str)-> str:
-        fn = []
+        function_description = []
         for function in self.functions_definition:
 
-            fn.append([function['name'], function['description']])
+            function_description.append([function['name'], function['description']])
 
         return f"""
 You are a function selector.
@@ -80,7 +80,7 @@ available functions:
 {self.available_functions}
 
 Description of the functions:
-{fn}
+{function_description}
 
 user request:
 {user_prompt}
