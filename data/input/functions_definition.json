@@ -19,11 +19,11 @@
     "description": "Generate a greeting message for a person by name.",
     "parameters": {
       "name": {
-        "type": "string"
+        "type": "number"
       }
     },
     "returns": {
-      "type": "string"
+      "type": "number"
     }
   },
   {
@@ -31,11 +31,11 @@
     "description": "Reverse a string and return the reversed result.",
     "parameters": {
       "s": {
-        "type": "string"
+        "type": "integer"
       }
     },
     "returns": {
-      "type": "string"
+      "type": "integer"
     }
   },
   {
@@ -48,24 +48,6 @@
     },
     "returns": {
       "type": "number"
-    }
-  },
-  {
-    "name": "fn_substitute_string_with_regex",
-    "description": "Replace all occurrences matching a regex pattern in a string.",
-    "parameters": {
-      "source_string": {
-        "type": "string"
-      },
-      "regex": {
-        "type": "string"
-      },
-      "replacement": {
-        "type": "string"
-      }
-    },
-    "returns": {
-      "type": "string"
     }
   }
 ]

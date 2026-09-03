@@ -8,7 +8,7 @@ from argparse import ArgumentParser
 
 class Parser:
 
-    def _parse(self)-> None:
+    def _parsing_input_files(self)-> None:
 
         self.get_args()
         self.prompts: List[Dict[str, str]] = self.validate_prompt(self.input)
@@ -28,6 +28,7 @@ class Parser:
         self.input: str = args.input
         self.ouput: str = args.output
         self.functions_definition_path: str = args.functions_definition
+
 
     def validate_prompt(self, file: str)-> List[Dict[str, str]]:
 
@@ -64,16 +65,23 @@ class Parser:
 
         if not os.path.getsize(file):
             raise ValueError("empty file")
+
         with open(file) as f:
+
             data = json.load(f)
             if not data:
                 raise ValueError("Error in definitions file: Invalid data (empty list)")
+
             for item in data:
+
                 if not item:
                     raise ValueError("Error in definitions file: Invalid data (empty dict)")
+
         if not isinstance(data, list):
             data = [data]
+
         for content in data:
+
             try:
                 ParsingDefinition(content=content)
             except ValidationError as e:

@@ -1,0 +1,180 @@
+from llm_sdk import Small_LLM_Model
+from typing import Dict, List, Any
+from enum import Enum
+import numpy as np
+from integers import Integer
+from boolean import Boolean
+from number import Number
+from strings import String
+
+
+class State(Enum):
+    START = 0
+    KEY = 1
+    COLON = 2
+    VALUE = 3
+    COMA = 4
+    END = 5
+    FINISH = 6
+
+
+class ParametersGenerator:
+
+    def __init__(self,
+                     model: Small_LLM_Model,
+                     prompt: str,
+                     function_name: str ,
+                     functions_definition: List[Dict[str, Any]])-> None:
+    
+            self.__model: Small_LLM_Model = model
+            self.prompt: str = prompt
+            self.function_name: str = function_name
+            self.functions_definition: List[Dict[str, Any]] = functions_definition
+            self.current_state = State.START
+
+    def __get_function_definition(self)-> None:
+    
+        for function in self.functions_definition:
+
+            if function['name'] == self.function_name:
+                return function
+
+        raise ValueError("[Error] Unkown function name: "
+                         f"must be one of '{self.functions_definition}'")
+
+    def generate_parameter(self)-> str:
+
+        self.generated_output: str = ""
+        function: Dict[str, Any] = self.__get_function_definition()
+        self.parameters: Dict[str, Dict[str, str]] = function['parameters']
+
+        self.number_of_param: int = len(self.parameters)
+        prompt_tokens: List[int] = np.array(self.__model.encode(self.__build_prompt(self.prompt)))[0].tolist()
+        
+        while self.current_state != State.FINISH:
+            output = self.__get_next_token(self.current_state, prompt_tokens)
+            if not output:
+                continue
+            self.generated_output += output
+            print(self.generated_output)
+
+        return self.generated_output
+
+    def __get_next_token(self, state: State, prompt_tokens: List[int])-> str:
+
+        output: List[int] = []
+        while self.current_state == state:
+
+            if state == State.KEY:
+                if not self.parameters:
+                    self.current_state = State.END
+                    return None
+
+                self.current_key: str = list(self.parameters.keys())[0]
+                self.current_value: Dict[str, str] = self.parameters[self.current_key]
+                self.current_state = State.COLON
+                del self.parameters[self.current_key]
+                return self.add_couts(self.current_key)   
+
+            logits: List[int] = self.__model.get_logits_from_input_ids(prompt_tokens)    
+            mask: List[int] = np.full_like(logits, float("-inf"))
+
+            allowed_ids: List[int] = self.__get_allowed_ids(prompt_tokens)
+
+            mask[allowed_ids] = 0
+            masked_logits = mask + logits
+            next_token = np.argmax(masked_logits)
+            output.append(next_token)
+            prompt_tokens.append(next_token)
+
+        return self.__model.decode(output)
+
+    def add_couts(self, current_key: str)-> str:
+
+        text: str = ""
+        text += "\""
+        text += current_key
+        text += "\""
+        return text
+
+    def __get_allowed_ids(self, prompt_tokens: List[int])-> List[int]:
+    
+        if self.current_state == State.START:
+            self.current_state = State.KEY
+            return self.__get_tokens_for("{")
+
+        if self.current_state == State.COLON:
+            self.current_state = State.VALUE
+            return self.__get_tokens_for(":")
+
+        if self.current_state == State.END:
+            self.current_state = State.FINISH
+            return self.__get_tokens_for("}")
+
+        if self.current_state == State.COMA:
+            return self.__get_tokens_for(",")
+
+        if self.current_state == State.VALUE:
+            return self.__get_parameter_value(prompt_tokens)
+
+    def __get_parameter_value(self, prompt_tokens)-> List[int]:
+
+        if self.current_value['type'] == "string":
+            string = String(self.__model, prompt_tokens)
+            return string.generate_string()
+
+        if self.current_value['type'] == "number":
+            print("it's number")
+            number = Number(self.__model, prompt_tokens)
+            return number.generate_numbers()
+
+        if self.current_value['type'] == "integer":
+            integer = Integer(self.__model, prompt_tokens)
+            return integer.generate_integer()
+
+        if self.current_value['type'] == "boolean":
+            boolean = Boolean(self.__model, prompt_tokens)
+            return boolean.generate_bool()
+
+    def __get_tokens_for(self, input: str)-> List[int]:
+            return np.array(self.__model.encode(input))[0].tolist()
+
+    def __build_prompt(self, user_prompt: str)-> str:
+    
+            function_description: str = ""
+            for function in self.functions_definition:
+    
+                if function['name'] == self.function_name:
+                    function_description = function['description']
+                    break
+
+            return f"""
+You are a parameter extraction system.
+
+Your task is to extract the parameter values required by the selected function from the user's request.
+
+Selected function:
+{self.function_name}
+
+Function description:
+{function_description}
+
+Required parameters:
+{self.parameters}
+
+Rules:
+- Extract only the parameters required by the selected function.
+- Use exactly the parameter names provided in the definition.
+- The value of each parameter must match its required type.
+- Do not add extra parameters.
+- Do not calculate or execute the function.
+- Do not return the function name.
+- Do not explain your answer.
+- Return only a JSON object containing the parameters.
+- The JSON object must contain all required parameters.
+
+User request:
+{user_prompt}
+
+Output:
+"""
