@@ -6,19 +6,16 @@ from typing import Dict, Any, List
 from argparse import ArgumentParser
 
 
-class Parser:
+class Parser():
 
-    def _parsing_input_files(self)-> None:
-
+    def parsing_input_files(self)-> None:
         self.get_args()
         self.prompts: List[Dict[str, str]] = self.validate_prompt(self.input)
         self.functions_definition: List[Dict[str, Any]] = self.validate_def(self.functions_definition_path)
 
-
     def get_args(self)-> None:
 
         parser = ArgumentParser()
-
         parser.add_argument("--input", default="data/input/function_calling_tests.json")
         parser.add_argument("--output", default="data/output/function_calls.json")
         parser.add_argument("--functions_definition", default="data/input/functions_definition.json")
@@ -28,7 +25,6 @@ class Parser:
         self.input: str = args.input
         self.ouput: str = args.output
         self.functions_definition_path: str = args.functions_definition
-
 
     def validate_prompt(self, file: str)-> List[Dict[str, str]]:
 
@@ -50,16 +46,13 @@ class Parser:
                 ParsingContent(content=cotent)
 
             except ValidationError as e:
-                print(f"[Error] Invalide type: {e.errors()[0]['msg'].strip('Value error, ')}, "
-                    "expected dict[str, str]"
-            )
+                print(f"[Error] {e.errors()[0]['msg'].strip('Value error, ')}")
                 raise
             except ValueError as e:
                 print(e)
                 raise
 
         return data
-
 
     def validate_def(self, file: str)-> List[Dict[str, Any]]:
 

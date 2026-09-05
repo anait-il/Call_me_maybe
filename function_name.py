@@ -27,14 +27,14 @@ class FunctionName:
 
         return ids
 
-    def get_function_name(self, prompt: str)-> str: 
+    def generate_function_name(self, prompt: str)-> str: 
 
         output: str = ""
         
         tokens: List[int] = np.array(self.model.encode(
             self.build_prompt(prompt)))[0].tolist()
 
-        for i, _ in enumerate(count()):
+        for i in count():
             logits: List[float] = self.model.get_logits_from_input_ids(tokens)
             mask: List[float] = np.full_like(logits, float("-inf"))
             allowed_ids: List[int] = self.set_allowed_ids(i)
@@ -51,13 +51,6 @@ class FunctionName:
             tokens.append(next_id)
 
         return output
-
-    #def generate_function_name(self)-> None:
-
-    #    for prompt in self.prompts:
-
-    #        output: str = self.get_function_name(prompt['prompt'])
-    #        print(output)
 
     def build_prompt(self, user_prompt: str)-> str:
         function_description = []

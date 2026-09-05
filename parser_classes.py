@@ -42,7 +42,8 @@ class ParsingDefinition(BaseModel):
 
         if len(self.content) < 4:
             raise ValueError("Invalide function definition: "
-                             "missid argument/arguments"
+                             "missid argument/arguments, "
+                             "expected keys {name, description, parameters, return}"
             )
 
         for key, value in self.content.items():

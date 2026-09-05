@@ -13,30 +13,40 @@ class Boolean:
 
     def __init__(self,
                  model: Small_LLM_Model,
-                 prompt: str)-> None:
+                 prompt: List[int],
+                 user_prompt: str)-> None:
 
-        self.__model: Small_LLM_Model = model
-        self.current_state: Fsm = Fsm.DIGITS
+        self.__model: Small_LLM_Model = model 
         self.prompt: List[int] = prompt
+        self.user_prompt: str = user_prompt
 
-    def generate_bool(self)-> List[int]:
+    def generate_bool(self)-> str:
 
-        self.generated: List[int] = []
+        self.generated: str = ""
+        self.current_state: Fsm = Fsm.DIGITS
         while not self.current_state == Fsm.END:
+ 
+            if len(self.generated) > len (self.user_prompt):
+                break
 
-            logits: List[int] = self.__model.get_logits_from_input_ids(self.prompt)
-            mask: List[int] = np.full_like(logits, float("-inf"))
-            allowed_tokens: List[int] = self.__get_tokens(self.current_state)
-            mask[allowed_tokens] = 0
-            masked_logits: List[int] = mask + logits
+            logits: List[int] = self.__model.get_logits_from_input_ids(self.prompt) 
+            masked_logits: List[int] = self.__get_masked_logits(logits)
             next_token: int = np.argmax(masked_logits)
-            self.generated.append(next_token)
+            self.generated += self.__model.decode(next_token)
             self.prompt.append(next_token)
-            if self.__my_decode(self.generated) == 'true' or \
-                self.__my_decode(self.generated) == "false":
+            if self.generated == 'true' or \
+                self.generated == "false":
                 break
 
         return self.generated
+
+    def __get_masked_logits(self, logits: List[int])-> List[int]:
+
+        mask: List[int] = np.full_like(logits, float("-inf"))
+        allowed_tokens: List[int] = self.__get_tokens(self.current_state)
+        mask[allowed_tokens] = 0
+ 
+        return mask + logits
 
     def __get_tokens(self, state: Fsm)-> List[int]:
 
@@ -46,13 +56,3 @@ class Boolean:
             tokens = np.array(self.__model.encode("truefalse")).tolist()[0]
             self.current_state = Fsm.END
             return tokens
-
-    def __my_decode(self, tokens: List[int] | int)-> str:
-
-        if not isinstance(tokens, List):
-            tokens = list(tokens)
-        return self.__model.decode(tokens)
-
-    def __my_encode(self, string: str)-> List[int]:
-
-        return np.array(self.__model.encode(string)).tolist()[0]

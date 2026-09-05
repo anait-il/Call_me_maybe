@@ -10,7 +10,7 @@ def main()-> None:
 
     #parse prompts and functions
     parser = Parser()
-    parser._parsing_input_files()
+    parser.parsing_input_files()
 
     #import llm modelform hugging face
     model = Small_LLM_Model()
