@@ -54,40 +54,65 @@ class ParametersGenerator:
         while self.current_state != State.FINISH:
             output = self.__get_next_token(self.current_state, prompt_tokens)
             if not output:
+                self.current_state = State.END
                 continue
+
+            elif self.current_state == State.END:
+                self.current_state = State.FINISH
+
+            elif self.current_state == State.START:
+                self.current_state = State.KEY
+
+            elif self.current_state == State.KEY:
+                self.current_state = State.COLON
+
+            elif self.current_state == State.COLON:
+                self.current_state = State.VALUE
+
+            elif self.current_state == State.VALUE:
+                self.current_state = State.COMA
+
+            elif self.current_state == State.COMA:
+                if not self.parameters:
+                    self.current_state = State.END
+                else:
+                    self.current_state = State.KEY
+
             self.generated_output += output
             print(self.generated_output)
 
         return self.generated_output
 
-    def __get_next_token(self, state: State, prompt_tokens: List[int])-> str:
+    def __get_next_token(self, state: State, prompt_tokens: List[int])-> str | None:
 
         output: List[int] = []
-        while self.current_state == state:
+        if state == State.KEY:
+            if not self.parameters:
+                self.current_state = State.END
+                return None
 
-            if state == State.KEY:
-                if not self.parameters:
-                    self.current_state = State.END
-                    return None
+            self.current_key: str = list(self.parameters.keys())[0]
+            self.current_value: Dict[str, str] = self.parameters[self.current_key]
+            del self.parameters[self.current_key]
+            return self.add_couts(self.current_key)   
 
-                self.current_key: str = list(self.parameters.keys())[0]
-                self.current_value: Dict[str, str] = self.parameters[self.current_key]
-                self.current_state = State.COLON
-                del self.parameters[self.current_key]
-                return self.add_couts(self.current_key)   
+        logits: List[int] = self.__model.get_logits_from_input_ids(prompt_tokens)    
+        masked_logits: List[int] = self.__get_masked_logits(logits, prompt_tokens)
+        next_token: int = np.argmax(masked_logits)
 
-            logits: List[int] = self.__model.get_logits_from_input_ids(prompt_tokens)    
-            mask: List[int] = np.full_like(logits, float("-inf"))
-
-            allowed_ids: List[int] = self.__get_allowed_ids(prompt_tokens)
-
-            mask[allowed_ids] = 0
-            masked_logits = mask + logits
-            next_token = np.argmax(masked_logits)
-            output.append(next_token)
-            prompt_tokens.append(next_token)
+        output.append(next_token)
 
         return self.__model.decode(output)
+
+    def __get_masked_logits(self,
+                            logits: List[int],
+                            prompt_tokens: List[int])-> List[int]:
+
+        mask: List[int] = np.full_like(logits, float("-inf"))
+        allowed_ids: List[int] = self.__get_allowed_ids(prompt_tokens)
+        mask[allowed_ids] = 0
+
+        return mask + logits
 
     def add_couts(self, current_key: str)-> str:
 
@@ -100,15 +125,12 @@ class ParametersGenerator:
     def __get_allowed_ids(self, prompt_tokens: List[int])-> List[int]:
     
         if self.current_state == State.START:
-            self.current_state = State.KEY
             return self.__get_tokens_for("{")
 
         if self.current_state == State.COLON:
-            self.current_state = State.VALUE
             return self.__get_tokens_for(":")
 
         if self.current_state == State.END:
-            self.current_state = State.FINISH
             return self.__get_tokens_for("}")
 
         if self.current_state == State.COMA:
@@ -120,19 +142,22 @@ class ParametersGenerator:
     def __get_parameter_value(self, prompt_tokens)-> List[int]:
 
         if self.current_value['type'] == "string":
+            print("inside generate string")
             string = String(self.__model, prompt_tokens)
             return string.generate_string()
 
         if self.current_value['type'] == "number":
-            print("it's number")
+            print("inside generate number")
             number = Number(self.__model, prompt_tokens)
             return number.generate_numbers()
 
         if self.current_value['type'] == "integer":
+            print("inside generate integer")
             integer = Integer(self.__model, prompt_tokens)
             return integer.generate_integer()
 
         if self.current_value['type'] == "boolean":
+            print("inside generate boolean")
             boolean = Boolean(self.__model, prompt_tokens)
             return boolean.generate_bool()
 

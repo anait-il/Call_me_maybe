@@ -23,7 +23,6 @@ class FunctionName:
 
         for tokens in self.functions_token:
             if len(tokens) > index:
-
                 ids.append(tokens[index])
 
         return ids
