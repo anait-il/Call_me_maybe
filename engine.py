@@ -43,9 +43,7 @@ class Enginne():
                                         prompt,
                                         self.functions_definition)
             prompt = prompt['prompt']
-            #print(prompt)
             func_name = name_generation.generate_function_name(prompt)
-            #print(name)
             parameters_generation = ParametersGenerator(self.__model, prompt, func_name, self.functions_definition)
             params = parameters_generation.generate_parameter()
             output = self.__encapsulation(prompt, func_name, params)

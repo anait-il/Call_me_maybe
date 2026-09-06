@@ -25,3 +25,5 @@ if __name__ == "__main__":
         main()
     except (ValidationError, ValueError):
          exit(1)
+    except (KeyboardInterrupt) as e:
+        print(f"[Error]: {e}")

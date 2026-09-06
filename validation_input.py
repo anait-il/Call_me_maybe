@@ -1,6 +1,6 @@
 import os
 import json
-from parser_classes import ParsingContent, ParsingDefinition
+from validation_classes import ParsingContent, ParsingDefinition
 from pydantic import ValidationError
 from typing import Dict, Any, List
 from argparse import ArgumentParser

@@ -22,33 +22,36 @@ class String:
 
     def generate_string(self)-> str:
 
-        self.generated: str = ""
-        self.current_state: Fsm = Fsm.START
+        self.__generated: str = ""
+        self.__current_state: Fsm = Fsm.START
         while True:
 
             logits: List[int] = self.__model.get_logits_from_input_ids(self.prompt)
             masked_logits: List[int] = self.__get_masked_logits(logits)
             next_token: int = np.argmax(masked_logits)
+            print(self.__model.decode([next_token]))
+            next_token_decode: str = self.__model.decode([next_token])
+            self.__generated += next_token_decode
 
-            self.generated += self.__model.decode([next_token])
-            self.prompt.append(next_token)
+            if self.__current_state == Fsm.START:
+                self.__current_state = Fsm.CHAR
 
-            if self.current_state == Fsm.START:
-                self.current_state = Fsm.CHAR
-
-            elif next_token in self.__my_encode("\""):
-                if self.generated[-1] != "\\":
+            elif "\"" in next_token_decode:
+                index: int = next_token_decode.find("\"")
+                if index == 0:
+                    continue
+                if self.__generated[index - 1] != "\\":
                     break 
 
-            elif len(self.generated) > len(self.user_prompt):
+            elif len(self.__generated) > len(self.user_prompt):
                 break
 
-        return self.generated
+        return self.__generated
 
     def __get_masked_logits(self, logits: List[int])-> List[int]:
 
         mask: List[int] = np.full_like(logits, float("-inf"))
-        allowed_tokens: List[int] = self.__get_tokens(self.current_state)
+        allowed_tokens: List[int] = self.__get_tokens(self.__current_state)
         
         if not allowed_tokens:
             return logits
@@ -65,14 +68,4 @@ class String:
             return tokens
 
         elif state == Fsm.CHAR:
-            return tokens 
-
-    def __my_decode(self, tokens: List[int] | int)-> str:
-
-        if not isinstance(tokens, List):
-            tokens = list(tokens)
-        return self.__model.decode(tokens)
-
-    def __my_encode(self, string: str)-> List[int]:
-    
-        return np.array(self.__model.encode(string)).tolist()[0]
+            return tokens

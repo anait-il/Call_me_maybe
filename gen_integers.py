@@ -5,7 +5,6 @@ import numpy as np
 
 
 class Fsm(Enum):
-    SIGN = 0
     DIGITS = 1
     ALPHANUM = 2
     END = 3
@@ -24,39 +23,36 @@ class Integer:
 
     def generate_integer(self)-> str:
 
-        self.generated: str = ""
-        self.current_state: Fsm = Fsm.SIGN
-        while not self.current_state == Fsm.END:
+        self.__generated: str = ""
+        self.__generated_tokens: List[int] = []
+        self.__current_state: Fsm = Fsm.DIGITS
+        while not self.__current_state == Fsm.END:
 
-            if len(self.generated) > len(self.user_prompt):
+            if len(self.__generated) > len(self.user_prompt):
                 break
 
-            logits: List[int] = self.__model.get_logits_from_input_ids(self.builded_prompt) 
+            logits: List[int] = self.__model.get_logits_from_input_ids(
+                self.builded_prompt + self.__generated_tokens) 
             masked_logits: List[int] = self.__get_masked_logits(logits)
             next_token: int = np.argmax(masked_logits)
-
-            if self.current_state == Fsm.SIGN:
-                self.current_state = Fsm.DIGITS
-                if self.__model.decode([next_token]) == "+":
-                    continue
     
-            elif self.current_state == Fsm.DIGITS:
-                self.current_state = Fsm.ALPHANUM
+            if self.__current_state == Fsm.DIGITS:
+                self.__current_state = Fsm.ALPHANUM
                 
-            elif self.current_state == Fsm.ALPHANUM:
+            elif self.__current_state == Fsm.ALPHANUM:
                 if next_token in self.__my_encode(",}"):
-                    self.current_state = Fsm.END
+                    self.__current_state = Fsm.END
                     break
 
-            self.generated += self.__model.decode(next_token)
-            self.builded_prompt.append(next_token)
+            self.__generated += self.__model.decode(next_token)
+            self.__generated_tokens.append(next_token)
 
-        return self.generated
+        return self.__generated
 
     def __get_masked_logits(self, logits: List[int])-> List[int]:
 
         mask: List[int] = np.full_like(logits, float("-inf"))
-        allowed_tokens: List[int] = self.__get_tokens(self.current_state)
+        allowed_tokens: List[int] = self.__get_tokens(self.__current_state)
         mask[allowed_tokens] = 0
         
         return mask + logits
@@ -65,15 +61,11 @@ class Integer:
 
         tokens: List[int] = []
 
-        if state == Fsm.SIGN:
-            tokens = np.array(self.__model.encode("-+")).tolist()[0]
-            return tokens
-
         if state == Fsm.DIGITS:
-            tokens = np.array(self.__model.encode("0123456789")).tolist()[0]
+            tokens = np.array(self.__model.encode("-0123456789")).tolist()[0]
             return tokens
 
-        if state == Fsm.ALPHANUM:
+        elif state == Fsm.ALPHANUM:
             tokens = np.array(self.__model.encode("0123456789,}")).tolist()[0]
             return tokens
 

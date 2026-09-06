@@ -22,28 +22,30 @@ class Boolean:
 
     def generate_bool(self)-> str:
 
-        self.generated: str = ""
-        self.current_state: Fsm = Fsm.DIGITS
-        while not self.current_state == Fsm.END:
+        self.__generated: str = ""
+        self.__current_state: Fsm = Fsm.DIGITS
+        while not self.__current_state == Fsm.END:
  
-            if len(self.generated) > len (self.user_prompt):
+            if len(self.__generated) > len ("false"):
                 break
 
             logits: List[int] = self.__model.get_logits_from_input_ids(self.prompt) 
             masked_logits: List[int] = self.__get_masked_logits(logits)
             next_token: int = np.argmax(masked_logits)
-            self.generated += self.__model.decode(next_token)
+            self.__generated += self.__model.decode(next_token)
             self.prompt.append(next_token)
-            if self.generated == 'true' or \
-                self.generated == "false":
+            if self.__generated.lower() == 'true' or \
+                self.__generated.lower() == "false" or \
+                self.__generated == "0" or \
+                self.__generated == "1":
                 break
 
-        return self.generated
+        return self.__generated
 
     def __get_masked_logits(self, logits: List[int])-> List[int]:
 
         mask: List[int] = np.full_like(logits, float("-inf"))
-        allowed_tokens: List[int] = self.__get_tokens(self.current_state)
+        allowed_tokens: List[int] = self.__get_tokens(self.__current_state)
         mask[allowed_tokens] = 0
  
         return mask + logits
@@ -54,5 +56,8 @@ class Boolean:
 
         if state == Fsm.DIGITS:
             tokens = np.array(self.__model.encode("truefalse")).tolist()[0]
-            self.current_state = Fsm.END
+            tokens += np.array(self.__model.encode("TrueFalse")).tolist()[0]
+            tokens += np.array(self.__model.encode("TRUEFALSE")).tolist()[0]
+            tokens += np.array(self.__model.encode("01")).tolist()[0]
+            self.__current_state = Fsm.END
             return tokens

@@ -9,6 +9,9 @@
     "prompt": "Greet shrek"
   },
   {
+    "prompt": "return true"
+  },
+  {
     "prompt": "Greet john"
   },
   {

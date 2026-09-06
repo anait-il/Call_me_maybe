@@ -2,10 +2,10 @@ from llm_sdk import Small_LLM_Model
 from typing import Dict, List, Any
 from enum import Enum
 import numpy as np
-from integers import Integer
-from boolean import Boolean
-from number import Number
-from strings import String
+from gen_integers import Integer
+from gen_boolean import Boolean
+from gen_number import Number
+from gen_strings import String
 
 
 class State(Enum):
@@ -51,8 +51,10 @@ class ParametersGenerator:
                 self.__build_prompt(self.prompt, parameters)))[0].tolist()
 
         while self.current_state != State.FINISH:
-    
-            output = self.__get_next_token(self.current_state, prompt_tokens, parameters)
+
+            output = self.__get_next_token(self.current_state,
+                                           prompt_tokens,
+                                           parameters)
             if not output:
                 self.current_state = State.END
                 continue
@@ -70,15 +72,16 @@ class ParametersGenerator:
                 self.current_state = State.VALUE
 
             elif self.current_state == State.VALUE:
-                self.current_state = State.COMA
-
-            elif self.current_state == State.COMA:
                 if not parameters:
                     self.current_state = State.END
                 else:
-                    self.current_state = State.KEY
+                    self.current_state = State.COMA
+
+            elif self.current_state == State.COMA:
+                self.current_state = State.KEY
 
             self.generated_output += output
+            prompt_tokens += np.array(self.__model.encode(output)).tolist()[0]
 
         return self.generated_output
 
@@ -98,7 +101,7 @@ class ParametersGenerator:
             return self.__add_couts(self.current_key)
 
         if state == State.VALUE:
-            return self.__get_parameter_value(prompt_tokens) 
+            return self.__get_parameter_value(prompt_tokens)
 
         logits: List[int] = self.__model.get_logits_from_input_ids(prompt_tokens)    
         masked_logits: List[int] = self.__get_masked_logits(logits)
@@ -161,35 +164,54 @@ class ParametersGenerator:
             return np.array(self.__model.encode(input))[0].tolist()
 
     def __build_prompt(self, user_prompt: str, parameters: Dict[str, Dict[str ,str]])-> str:
-    
+
             function_description: str = ""
             for function in self.functions_definition:
     
                 if function['name'] == self.function_name:
                     function_description = function['description']
                     break
-
+            striped_param: Dict[str, str] = {key: value["type"] for key, value in parameters.items()}
             return f"""
-You are a parameter extraction system.
+You extract function parameter values from a user's request.
 
-Your task is to extract the parameter values required by the selected function from the user's request.
-
-Selected function:
+Function name:
 {self.function_name}
 
 Function description:
 {function_description}
 
 Required parameters:
-{parameters}
+{striped_param}
+
+Your task:
+Read the user's request and extract the value of each required parameter.
 
 Rules:
-- Extract only the parameters required by the selected function.
-- The value of each parameter must match its required type.
+1. Return ONLY a JSON object.
+2. The JSON keys MUST be the parameter names listed in Required parameters.
+3. The values MUST match the required parameter types.
+4. Do not add parameters that are not listed.
+5. Do not add explanations, comments, or extra text.
+6. Extract values exactly from the user's request when possible.
+7. Do not invent values that are not present in the user's request.
+
+Examples:
+
+Example 1
+Q: What is the sum of 2 and 3?
+A: {{"a": 2, "b": 3}}
+
+Example 2
+Q: Reverse the string 'hello'
+A: {{"s": "hello"}}
+
+Example 3
+Q: Replace all numbers in "Hello 34 I'm 233 years old" with NUMBERS
+A: {{"source_string": "Hello 34 I'm 233 years old", "regex": "34 233", "replacement": "NUMBERS"}}
 
 User request:
-{user_prompt}
+Q: {user_prompt}
 
-parameters is :
-
+A:
 """
