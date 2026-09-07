@@ -7,10 +7,10 @@ class FunctionName:
 
     def __init__(self,
                  model: Small_LLM_Model,
-                 prompt: Dict[str, str],
+                 prompt: str,
                  functions_definition: List[Dict[str, Any]])-> None:
         self.model: Small_LLM_Model = model
-        self.prompt: Dict[str, str] = prompt
+        self.prompt: str = prompt
         self.functions_definition: List[Dict[str, Any]] = functions_definition
         self.available_functions: List[str] = [func['name']
                                                for func in self.functions_definition]
@@ -27,12 +27,12 @@ class FunctionName:
 
         return ids
 
-    def generate_function_name(self, prompt: str)-> str: 
+    def generate_function_name(self)-> str: 
 
         output: str = ""
         
         tokens: List[int] = np.array(self.model.encode(
-            self.build_prompt(prompt)))[0].tolist()
+            self.build_prompt(self.prompt)))[0].tolist()
 
         for i in count():
             logits: List[float] = self.model.get_logits_from_input_ids(tokens)

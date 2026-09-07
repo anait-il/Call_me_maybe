@@ -26,12 +26,12 @@ class Enginne():
     def __encapsulation(self,
                         prompt: str,
                         function_name: str,
-                        parameters: Dict[str, Any])-> Dict[str, Any]:
+                        params: str)-> Dict[str, Any]:
 
         my_container: Dict[str, Any] = self.__get_container()
         my_container["prompt"] = prompt
         my_container["name"] = function_name
-        my_container["parameters"] = parameters
+        my_container["parameters"] = params
 
         return my_container
 
@@ -39,13 +39,19 @@ class Enginne():
 
         for prompt in self.parser.prompts:
 
+            prompt = prompt['prompt']
+
             name_generation = FunctionName(self.__model,
                                         prompt,
                                         self.functions_definition)
-            prompt = prompt['prompt']
-            func_name = name_generation.generate_function_name(prompt)
-            parameters_generation = ParametersGenerator(self.__model, prompt, func_name, self.functions_definition)
+            func_name = name_generation.generate_function_name()
+
+            parameters_generation = ParametersGenerator(self.__model,
+                                                        prompt,
+                                                        func_name,
+                                                        self.functions_definition)
             params = parameters_generation.generate_parameter()
+
             output = self.__encapsulation(prompt, func_name, params)
             print(output)
             print("\n\n")
