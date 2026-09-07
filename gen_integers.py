@@ -2,6 +2,7 @@ from enum import Enum
 from typing import List
 from llm_sdk import Small_LLM_Model
 import numpy as np
+from numpy.typing import NDArray
 
 
 class Fsm(Enum):
@@ -15,13 +16,13 @@ class Integer:
     def __init__(self,
                  model: Small_LLM_Model,
                  builded_prompt: List[int],
-                 user_prompt: str)-> None:
+                 user_prompt: str) -> None:
 
         self.__model: Small_LLM_Model = model
         self.builded_prompt: List[int] = builded_prompt
         self.user_prompt: str = user_prompt
 
-    def generate_integer(self)-> str:
+    def generate_integer(self) -> str:
 
         self.__generated: str = ""
         self.__generated_tokens: List[int] = []
@@ -31,14 +32,14 @@ class Integer:
             if len(self.__generated) > len(self.user_prompt):
                 break
 
-            logits: List[int] = self.__model.get_logits_from_input_ids(
-                self.builded_prompt + self.__generated_tokens) 
-            masked_logits: List[int] = self.__get_masked_logits(logits)
-            next_token: int = np.argmax(masked_logits)
-    
+            logits: List[float] = self.__model.get_logits_from_input_ids(
+                self.builded_prompt + self.__generated_tokens)
+            masked_logits: NDArray = self.__get_masked_logits(logits)
+            next_token: int = int(np.argmax(masked_logits))
+
             if self.__current_state == Fsm.DIGITS:
                 self.__current_state = Fsm.ALPHANUM
-                
+
             elif self.__current_state == Fsm.ALPHANUM:
                 if next_token in self.__my_encode(",}"):
                     self.__current_state = Fsm.END
@@ -49,15 +50,15 @@ class Integer:
 
         return self.__generated
 
-    def __get_masked_logits(self, logits: List[int])-> List[int]:
+    def __get_masked_logits(self, logits: List[float]) -> NDArray:
 
-        mask: List[int] = np.full_like(logits, float("-inf"))
+        mask: NDArray = np.full_like(logits, float("-inf"))
         allowed_tokens: List[int] = self.__get_tokens(self.__current_state)
         mask[allowed_tokens] = 0
-        
+
         return mask + logits
-        
-    def __get_tokens(self, state: Fsm)-> List[int]:
+
+    def __get_tokens(self, state: Fsm) -> List[int]:
 
         tokens: List[int] = []
 
@@ -65,10 +66,10 @@ class Integer:
             tokens = np.array(self.__model.encode("-0123456789")).tolist()[0]
             return tokens
 
-        elif state == Fsm.ALPHANUM:
-            tokens = np.array(self.__model.encode("0123456789,}")).tolist()[0]
-            return tokens
+        tokens = np.array(self.__model.encode("0123456789,}")).tolist()[0]
+        return tokens
 
-    def __my_encode(self, string: str)-> List[int]: 
+    def __my_encode(self, string: str) -> List[int]:
 
-        return np.array(self.__model.encode(string)).tolist()[0] 
+        return [int(token)
+                for token in np.array(self.__model.encode(string))[0]]

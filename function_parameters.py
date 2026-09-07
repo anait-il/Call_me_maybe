@@ -21,18 +21,18 @@ class State(Enum):
 class ParametersGenerator:
 
     def __init__(self,
-                     model: Small_LLM_Model,
-                     prompt: str,
-                     function_name: str ,
-                     functions_definition: List[Dict[str, Any]])-> None:
-    
-            self.__model: Small_LLM_Model = model
-            self.prompt: str = prompt
-            self.function_name: str = function_name
-            self.functions_definition: List[Dict[str, Any]] = functions_definition
+                 model: Small_LLM_Model,
+                 prompt: str,
+                 function_name: str,
+                 functions_definition: List[Dict[str, Any]]) -> None:
 
-    def __get_function_defintion_parameters(self)-> Dict[str, Dict[str, str]]:
-    
+        self.__model: Small_LLM_Model = model
+        self.prompt: str = prompt
+        self.function_name: str = function_name
+        self.functions_definition: List[Dict[str, Any]] = functions_definition
+
+    def __get_function_defintion_parameters(self) -> Dict[str, Dict[str, str]]:
+
         for function in self.functions_definition:
 
             if function['name'] == self.function_name:
@@ -41,11 +41,12 @@ class ParametersGenerator:
         raise ValueError("[Error] Unkown function name: "
                          f"must be one of '{self.functions_definition}'")
 
-    def generate_parameter(self)-> str:
+    def generate_parameter(self) -> str:
 
         self.generated_output: str = ""
         self.current_state: State = State.START
-        parameters: Dict[str, Dict[str, str]] = self.__get_function_defintion_parameters()
+        parameters: Dict[str, Dict[str, str]] = (
+            self.__get_function_defintion_parameters())
         prompt_tokens: List[int] = np.array(
             self.__model.encode(
                 self.__build_prompt(self.prompt, parameters)))[0].tolist()
@@ -88,7 +89,7 @@ class ParametersGenerator:
     def __get_next_token(self,
                          state: State,
                          prompt_tokens: List[int],
-                         parameters: Dict[str, Dict[str, str]])-> str | None:
+                         parameters: Dict[str, Dict[str, str]]) -> str | None:
 
         output: List[int] = []
         if state == State.KEY:
@@ -103,7 +104,8 @@ class ParametersGenerator:
         if state == State.VALUE:
             return self.__get_parameter_value(prompt_tokens)
 
-        logits: List[int] = self.__model.get_logits_from_input_ids(prompt_tokens)    
+        logits: List[int] = (
+            self.__model.get_logits_from_input_ids(prompt_tokens))
         masked_logits: List[int] = self.__get_masked_logits(logits)
         next_token: int = np.argmax(masked_logits)
 
@@ -112,7 +114,7 @@ class ParametersGenerator:
         return self.__model.decode(output)
 
     def __get_masked_logits(self,
-                            logits: List[int])-> List[int]:
+                            logits: List[int]) -> List[int]:
 
         mask: List[int] = np.full_like(logits, float("-inf"))
         allowed_ids: List[int] = self.__get_allowed_ids()
@@ -120,7 +122,7 @@ class ParametersGenerator:
 
         return mask + logits
 
-    def __add_couts(self, current_key: str)-> str:
+    def __add_couts(self, current_key: str) -> str:
 
         text: str = ""
         text += "\""
@@ -128,8 +130,8 @@ class ParametersGenerator:
         text += "\""
         return text
 
-    def __get_allowed_ids(self)-> List[int]:
-    
+    def __get_allowed_ids(self) -> List[int]:
+
         if self.current_state == State.START:
             return self.__get_tokens_for("{")
 
@@ -142,7 +144,7 @@ class ParametersGenerator:
         if self.current_state == State.COMA:
             return self.__get_tokens_for(",")
 
-    def __get_parameter_value(self, prompt_tokens: List[int])-> str:
+    def __get_parameter_value(self, prompt_tokens: List[int]) -> str:
 
         if self.current_value['type'] == "string":
             string = String(self.__model, prompt_tokens, self.prompt)
@@ -160,19 +162,23 @@ class ParametersGenerator:
             boolean = Boolean(self.__model, prompt_tokens, self.prompt)
             return boolean.generate_bool()
 
-    def __get_tokens_for(self, input: str)-> List[int]:
-            return np.array(self.__model.encode(input))[0].tolist()
+    def __get_tokens_for(self, input: str) -> List[int]:
+        return np.array(self.__model.encode(input))[0].tolist()
 
-    def __build_prompt(self, user_prompt: str, parameters: Dict[str, Dict[str ,str]])-> str:
+    def __build_prompt(self,
+                       user_prompt: str,
+                       parameters: Dict[str, Dict[str, str]]) -> str:
 
-            function_description: str = ""
-            for function in self.functions_definition:
-    
-                if function['name'] == self.function_name:
-                    function_description = function['description']
-                    break
-            striped_param: Dict[str, str] = {key: value["type"] for key, value in parameters.items()}
-            return f"""
+        function_description: str = ""
+        for function in self.functions_definition:
+
+            if function['name'] == self.function_name:
+                function_description = function['description']
+                break
+        striped_param: Dict[str, str] = (
+            {key: value["type"]
+                for key, value in parameters.items()})
+        return f"""
 You extract function parameter values from a user's request.
 
 Function name:
@@ -208,7 +214,9 @@ A: {{"s": "hello"}}
 
 Example 3
 Q: Replace all numbers in "Hello 34 I'm 233 years old" with NUMBERS
-A: {{"source_string": "Hello 34 I'm 233 years old", "regex": "34 233", "replacement": "NUMBERS"}}
+A: {{"source_string": \
+    "Hello 34 I'm 233 years old", \
+        "regex": "34 233", "replacement": "NUMBERS"}}
 
 User request:
 Q: {user_prompt}

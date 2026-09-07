@@ -2,6 +2,7 @@ from enum import Enum
 from typing import List
 from llm_sdk import Small_LLM_Model
 import numpy as np
+from numpy.typing import NDArray
 
 
 class Fsm(Enum):
@@ -15,13 +16,13 @@ class String:
     def __init__(self,
                  model: Small_LLM_Model,
                  prompt: List[int],
-                 user_prompt: str)-> None:
+                 user_prompt: str) -> None:
 
-        self.__model: Small_LLM_Model = model 
+        self.__model: Small_LLM_Model = model
         self.prompt: List[int] = prompt
         self.user_prompt: str = user_prompt
 
-    def generate_string(self)-> str:
+    def generate_string(self) -> str:
 
         self.__generated: str = ""
         self.__generated_tokens: List[int] = []
@@ -29,10 +30,11 @@ class String:
 
         while self.__current_state != Fsm.END:
 
-            logits: List[int] = self.__model.get_logits_from_input_ids(
+            logits: List[float] = self.__model.get_logits_from_input_ids(
                 self.prompt + self.__generated_tokens)
-            masked_logits: List[int] = self.__get_masked_logits(logits)
-            next_token: int = np.argmax(masked_logits)
+            masked_logits: List[float] | NDArray = (
+                self.__get_masked_logits(logits))
+            next_token: int = int(np.argmax(masked_logits))
 
             next_token_decode: str = self.__model.decode([next_token])
 
@@ -53,18 +55,19 @@ class String:
 
         return self.__generated
 
-    def __get_masked_logits(self, logits: List[int])-> List[int]:
+    def __get_masked_logits(self,
+                            logits: List[float]) -> List[float] | NDArray:
 
-        mask: List[int] = np.full_like(logits, float("-inf"))
+        mask: NDArray = np.full_like(logits, float("-inf"))
         allowed_tokens: List[int] = self.__get_tokens(self.__current_state)
-        
+
         if not allowed_tokens:
             return logits
         else:
             mask[allowed_tokens] = 0
             return mask + logits
 
-    def __get_tokens(self, state: Fsm)-> List[int]:
+    def __get_tokens(self, state: Fsm) -> List[int]:
 
         tokens: List[int] = []
 
@@ -72,5 +75,4 @@ class String:
             tokens = np.array(self.__model.encode(" \"")).tolist()[0]
             return tokens
 
-        elif state == Fsm.CHAR:
-            return tokens
+        return tokens
