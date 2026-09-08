@@ -35,9 +35,14 @@ class Number:
                 (self.building_prompt + self.__generated_tokens))
             masked_logits: NDArray = self.__get_masked_logits(logits)
             next_token: int = int(np.argmax(masked_logits))
-            print(self.__model.decode([next_token]))
             if self.__current_state == Fsm.DIGITS:
                 self.__current_state = Fsm.ALPHANUM
+
+            elif next_token == self.__my_encode("."):
+                if self.generate_numbers.find(".") != -1:
+                    self.__current_state = Fsm.END
+                    break
+
             elif next_token in self.__my_encode(",}"):
                 self.__current_state = Fsm.END
                 break

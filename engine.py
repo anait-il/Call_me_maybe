@@ -3,6 +3,10 @@ from function_name import FunctionName
 from function_parameters import ParametersGenerator
 from llm_sdk import Small_LLM_Model
 from typing import Dict, Any, List
+import os
+import json
+import time
+import rich
 
 
 class Enginne():
@@ -16,6 +20,7 @@ class Enginne():
         self.functions_definition: List[Dict[str, Any]] = (
             self.parser.functions_definition
             )
+        self.my_container: List[Dict[str, Any]] = []
 
     def __get_container(self) -> Dict[str, Any]:
 
@@ -30,18 +35,36 @@ class Enginne():
                         function_name: str,
                         params: str) -> Dict[str, Any]:
 
-        my_container: Dict[str, Any] = self.__get_container()
-        my_container["prompt"] = prompt
-        my_container["name"] = function_name
-        my_container["parameters"] = params
+        
+        element: Dict[str, str] =  self.__get_container()
+        element["prompt"] = prompt
+        element["name"] = function_name
+        element["parameters"] = params
+        self.my_container.append(element)
 
-        return my_container
+        return element
+
+    def __generate_output_file(self, called_function: str) -> None:
+
+        path: str = self.parser.ouput
+
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(self.parser.ouput, "+w") as f:
+            json.dump(called_function, f)
+
+    def __get_elapsed_time(self, end: float, start: float) -> None:
+
+        elapsed_time: float = end - start
+        minutes, second = divmod(elapsed_time, 60)
+        rich.print(f"\nGeneration completed in: [green]{int(minutes)}m {int(second)}s[/]")
 
     def start_generation(self) -> None:
 
+        start_time: float = time.perf_counter()
         user_prompt: str = ""
-        for prompt in self.parser.prompts:
+        for i, prompt in enumerate(self.parser.prompts):
 
+            rich.print(f"\nProcessing [green]{i+1}[/] function[gold]...[/]\n")
             user_prompt = prompt['prompt']
             name_generation: FunctionName = FunctionName(
                 self.__model,
@@ -57,4 +80,7 @@ class Enginne():
 
             output = self.__encapsulation(user_prompt, func_name, params)
             print(output)
-            print("\n\n")
+
+        end_time: float = time.perf_counter()
+        self.__get_elapsed_time(end_time, start_time)
+        self.__generate_output_file(output)
