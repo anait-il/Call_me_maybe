@@ -6,6 +6,7 @@ from typing import Dict, Any, List
 
 
 class Enginne():
+
     def __init__(self,
                  parser: Parser,
                  model: Small_LLM_Model) -> None:
@@ -38,22 +39,22 @@ class Enginne():
 
     def start_generation(self) -> None:
 
+        user_prompt: str = ""
         for prompt in self.parser.prompts:
 
-            prompt = prompt['prompt']
-
-            name_generation = FunctionName(
+            user_prompt = prompt['prompt']
+            name_generation: FunctionName = FunctionName(
                 self.__model,
-                prompt,
+                user_prompt,
                 self.functions_definition)
-            func_name = name_generation.generate_function_name()
-            parameters_generation = ParametersGenerator(
+            func_name: str = name_generation.generate_function_name()
+            parameters_generation: ParametersGenerator = ParametersGenerator(
                 self.__model,
-                prompt,
+                user_prompt,
                 func_name,
                 self.functions_definition)
-            params = parameters_generation.generate_parameter()
+            params: str = parameters_generation.generate_parameter()
 
-            output = self.__encapsulation(prompt, func_name, params)
+            output = self.__encapsulation(user_prompt, func_name, params)
             print(output)
             print("\n\n")

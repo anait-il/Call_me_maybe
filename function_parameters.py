@@ -2,6 +2,7 @@ from llm_sdk import Small_LLM_Model
 from typing import Dict, List, Any
 from enum import Enum
 import numpy as np
+from numpy.typing import NDArray
 from gen_integers import Integer
 from gen_boolean import Boolean
 from gen_number import Number
@@ -36,7 +37,7 @@ class ParametersGenerator:
         for function in self.functions_definition:
 
             if function['name'] == self.function_name:
-                return function['parameters'].copy()
+                return dict(function['parameters'].copy())
 
         raise ValueError("[Error] Unkown function name: "
                          f"must be one of '{self.functions_definition}'")
@@ -104,19 +105,19 @@ class ParametersGenerator:
         if state == State.VALUE:
             return self.__get_parameter_value(prompt_tokens)
 
-        logits: List[int] = (
+        logits: List[float] = (
             self.__model.get_logits_from_input_ids(prompt_tokens))
-        masked_logits: List[int] = self.__get_masked_logits(logits)
-        next_token: int = np.argmax(masked_logits)
+        masked_logits: NDArray = self.__get_masked_logits(logits)
+        next_token: int = int(np.argmax(masked_logits))
 
         output.append(next_token)
 
         return self.__model.decode(output)
 
     def __get_masked_logits(self,
-                            logits: List[int]) -> List[int]:
+                            logits: List[float]) -> NDArray:
 
-        mask: List[int] = np.full_like(logits, float("-inf"))
+        mask: NDArray = np.full_like(logits, float("-inf"))
         allowed_ids: List[int] = self.__get_allowed_ids()
         mask[allowed_ids] = 0
 
@@ -144,6 +145,8 @@ class ParametersGenerator:
         if self.current_state == State.COMA:
             return self.__get_tokens_for(",")
 
+        return []
+
     def __get_parameter_value(self, prompt_tokens: List[int]) -> str:
 
         if self.current_value['type'] == "string":
@@ -162,8 +165,11 @@ class ParametersGenerator:
             boolean = Boolean(self.__model, prompt_tokens, self.prompt)
             return boolean.generate_bool()
 
+        return ""
+
     def __get_tokens_for(self, input: str) -> List[int]:
-        return np.array(self.__model.encode(input))[0].tolist()
+        return [int(x)
+                for x in np.array(self.__model.encode(input))[0]()]
 
     def __build_prompt(self,
                        user_prompt: str,
