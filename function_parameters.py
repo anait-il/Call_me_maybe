@@ -207,25 +207,29 @@ Rules:
 5. Do not add explanations, comments, or extra text.
 6. Extract values exactly from the user's request when possible.
 7. Do not invent values that are not present in the user's request.
-8. Do not execute the function.
-9. Do not reverse, modify, escape or transform the string.
-10. Do not add any extra parentheses.
 
 Examples:
 
 Example 1
-Q: What is the sum of 2 and 3?
-A: {{"a": 2, "b": 3}}
+Q: Reverse the string "red"
+A: {{"s": "red"}}
 
 Example 2
-Q: Reverse the string 'hello'
-A: {{"s": "hello"}}
+Q: What is the sum of 2 and 3?
+A: {{"a": 2, "b": 3}}
 
 Example 3
 Q: Replace all numbers in "Hello 34 I'm 233 years old" with NUMBERS
 A: {{"source_string": \
     "Hello 34 I'm 233 years old", \
         "regex": "\\d+", "replacement": "NUMBERS"}}
+
+Example 4
+Q: Replace all vowels in 'Programming is fun' with "$"
+A: {{source_string: \
+    "Programming is fun", \
+        "regex": "[aeiouAEIOU]" \
+            "replacement": "$"}}
 
 User request:
 Q: {user_prompt}
