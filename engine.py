@@ -5,6 +5,7 @@ from llm_sdk import Small_LLM_Model  # type: ignore
 from typing import Dict, Any, List
 import os
 import json
+from json.decoder import JSONDecodeError
 import time
 import rich
 
@@ -35,11 +36,17 @@ class Enginne():
                         function_name: str,
                         params: str) -> Dict[str, Any]:
 
-        element: Dict[str, str] = self.__get_container()
+        element: Dict[str, Any] = self.__get_container()
         element["prompt"] = prompt
         element["name"] = function_name
-        element["parameters"] = params
+
+        try:
+            element["parameters"] = json.loads(params)
+        except JSONDecodeError as e:
+            print(f"[JsonError]: {e}")
+
         self.my_container.append(element)
+        print(self.my_container)
 
         return element
 
@@ -48,7 +55,7 @@ class Enginne():
         path: str = self.parser.ouput
 
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(self.parser.ouput, "+w") as f:
+        with open(self.parser.ouput, "w") as f:
             json.dump(called_function, f)
 
     def __get_elapsed_time(self, end: float, start: float) -> None:
@@ -62,6 +69,7 @@ class Enginne():
 
         start_time: float = time.perf_counter()
         user_prompt: str = ""
+        generated: List[Dict[str, Any]] = []
         for i, prompt in enumerate(self.parser.prompts):
 
             rich.print(f"\nProcessing [green]{i+1}[/] function[gold]...[/]\n")
@@ -77,10 +85,11 @@ class Enginne():
                 func_name,
                 self.functions_definition)
             params: str = parameters_generation.generate_parameter()
-
+            print(f"engine {params}")
             output = self.__encapsulation(user_prompt, func_name, params)
+            generated.append(output)
             print(output)
 
         end_time: float = time.perf_counter()
         self.__get_elapsed_time(end_time, start_time)
-        self.__generate_output_file(output)
+        self.__generate_output_file(generated)

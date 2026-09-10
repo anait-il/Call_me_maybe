@@ -8,15 +8,14 @@ function_definition = {
     "fn_substitute_string_with_regex": {
       "parameters": 
       {
-      "source_string": "string",
-      "regex": "string",
-      "replacement": "string"
+       "source_string": "string",
+       "regex": "string",
+       "replecement": "string"
     }
     }
 }
 
-function_name = "fn_reverse_string"
-
+function_name = "fn_substitute_string_with_regex"
 
 def main():
 
@@ -61,7 +60,8 @@ def build_prompt() -> str:
             JSON:
             {{
                 "prompt": {user_prompt},
-                "name": "'''
+                "name": "'''{function_name}
+                "parameters": 
         """
 
 

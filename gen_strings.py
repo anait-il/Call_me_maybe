@@ -42,7 +42,8 @@ class String:
                 index: int = next_token_decode.find("\"")
                 if self.__generated[index - 1] != "\\":
                     self.__current_state = Fsm.END
-                    next_token_decode = "\""
+
+                    next_token_decode = next_token_decode.split('"')[0] + "\""
 
             elif self.__current_state == Fsm.START:
                 self.__current_state = Fsm.CHAR

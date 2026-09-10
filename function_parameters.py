@@ -85,6 +85,7 @@ class ParametersGenerator:
             self.generated_output += output
             prompt_tokens += np.array(self.__model.encode(output)).tolist()[0]
 
+        print(f"function param {self.generated_output}")
         return self.generated_output
 
     def __get_next_token(self,
@@ -105,23 +106,7 @@ class ParametersGenerator:
         if state == State.VALUE:
             return self.__get_parameter_value(prompt_tokens)
 
-        logits: List[float] = (
-            self.__model.get_logits_from_input_ids(prompt_tokens))
-        masked_logits: NDArray = self.__get_masked_logits(logits)
-        next_token: int = int(np.argmax(masked_logits))
-
-        output.append(next_token)
-
-        return self.__model.decode(output)
-
-    def __get_masked_logits(self,
-                            logits: List[float]) -> NDArray:
-
-        mask: NDArray = np.full_like(logits, float("-inf"))
-        allowed_ids: List[int] = self.__get_allowed_ids()
-        mask[allowed_ids] = 0
-
-        return mask + logits
+        return self.__get_allowed_ids()
 
     def __add_couts(self, current_key: str) -> str:
 
@@ -131,21 +116,21 @@ class ParametersGenerator:
         text += "\""
         return text
 
-    def __get_allowed_ids(self) -> List[int]:
+    def __get_allowed_ids(self) -> str:
 
         if self.current_state == State.START:
-            return self.__get_tokens_for("{")
+            return "{"
 
         if self.current_state == State.COLON:
-            return self.__get_tokens_for(":")
+            return ":"
 
         if self.current_state == State.END:
-            return self.__get_tokens_for("}")
+            return "}"
 
         if self.current_state == State.COMA:
-            return self.__get_tokens_for(",")
+            return ","
 
-        return []
+        return ""
 
     def __get_parameter_value(self, prompt_tokens: List[int]) -> str:
 
@@ -167,95 +152,48 @@ class ParametersGenerator:
 
         return ""
 
-    def __get_tokens_for(self, input: str) -> List[int]:
-        return [int(x)
-                for x in np.array(self.__model.encode(input))[0]]
+    def __get_parameters_definition(self,
+                                    parameteres: Dict[str, Dict[str, str]]) -> Dict[str, str]:
+
+        param: Dict[str, str] = {}
+        for key, value in parameteres.items():
+            param[key] = value["type"]
+
+        return param
 
     def __build_prompt(self,
                        user_prompt: str,
                        parameters: Dict[str, Dict[str, str]]) -> str:
 
-        function_description: str = ""
-        for function in self.functions_definition:
+        function_definition: Dict[str, Dict[str, str]] = (
+            {self.function_name: {
+                "parameters": self.__get_parameters_definition(parameters)
+            }}
+        )
 
-            if function['name'] == self.function_name:
-                function_description = function['description']
-                break
-        striped_param: Dict[str, str] = (
-            {key: value["type"]
-                for key, value in parameters.items()})
         return f"""
-You extract function parameter values from a user's request.
+            You are a function-calling assistant that
+            helps me get a JSON format from a user prompt.
 
-Function name:
-{self.function_name}
+            Available functions:
+            {function_definition}
 
-Function description:
-{function_description}
+            Example:
 
-Required parameters:
-{striped_param}
+            Prompt: "what is the sum of 1 and 2"
 
-Your task:
-Read the user's request and extract the value of each required parameter.
+            Answer:
+            {{
+                "prompt": "what is the sum of 1 and 2",
+                "name": "fn_add_numbers",
+                "parameters": {{"a": 1.0, "b": 2.0}}
+            }}
 
-Rules:
-    - Generate ONLY the parameters.
-    - Use exactly the parameter names from the function.
-    - Extract values from the user prompt.
-    - Do not execute the function.
-    - Do not calculate the function result.
-    - Do not transform input values.
+            User prompt: {user_prompt}
 
-    STRING PARAMETERS:
-    - Extract the original string exactly as it appears in
-              the user prompt.
-    - Do not reverse, modify, escape, or transform the string.
-    - Do not add or remove characters.
-    - Keep punctuation and spaces unchanged.
-
-    NUMBER PARAMETERS:
-    - Extract the original number from the user prompt.
-    - Do not calculate with the number.
-
-    REGEX PARAMETERS:
-    - Generate ONLY the regex pattern needed to match the
-        target described by the user.
-    - The regex must be the simplest exact pattern.
-    - Do not add parentheses.
-    - Do not add capturing groups.
-    - Do not add .* or other unnecessary characters.
-    - Do not add characters before or after the pattern.
-    - Do not copy the actual values found in the source string.
-    - Do not include the replacement value.
-    - Return the regex itself, not a larger expression.
-
-
-Examples:
-
-Example 1
-Q: Reverse the string "red"
-A: {{"s": "red"}}
-
-Example 2
-Q: What is the sum of 2 and 3?
-A: {{"a": 2, "b": 3}}
-
-Example 3
-Q: Replace all numbers in "Hello 34 I'm 233 years old" with NUMBERS
-A: {{"source_string": \
-    "Hello 34 I'm 233 years old", \
-        "regex": "\d+", "replacement": "NUMBERS"}}
-
-Example 4
-Q: Replace all vowels in 'Programming is fun' with "#"
-A: {{"source_string": \
-    "Programming is fun", \
-        "regex": "[aeiouAEIOU]" \
-            "replacement": "#"}}
-
-User request:
-Q: {user_prompt}
-
-A:
-"""
+            JSON:
+            {{
+                "prompt": {user_prompt},
+                "name": "'''{self.function_name}
+                "parameters": 
+        """
