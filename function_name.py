@@ -2,7 +2,7 @@ import numpy as np
 from numpy.typing import NDArray
 from itertools import count
 from typing import Dict, List, Any
-from llm_sdk import Small_LLM_Model
+from llm_sdk import Small_LLM_Model  # type: ignore
 
 
 class FunctionName:

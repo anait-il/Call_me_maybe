@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import List
-from llm_sdk import Small_LLM_Model
+from llm_sdk import Small_LLM_Model  # type: ignore
 import numpy as np
 from numpy.typing import NDArray
 
@@ -39,7 +39,7 @@ class Number:
                 self.__current_state = Fsm.ALPHANUM
 
             elif next_token == self.__my_encode("."):
-                if self.generate_numbers.find(".") != -1:
+                if self.__generated.find(".") != -1:
                     self.__current_state = Fsm.END
                     break
 

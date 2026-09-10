@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import List
-from llm_sdk import Small_LLM_Model
+from llm_sdk import Small_LLM_Model  # type: ignore
 import numpy as np
 from numpy.typing import NDArray
 

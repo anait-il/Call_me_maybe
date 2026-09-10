@@ -1,7 +1,7 @@
 from validation_input import Parser
 from function_name import FunctionName
 from function_parameters import ParametersGenerator
-from llm_sdk import Small_LLM_Model
+from llm_sdk import Small_LLM_Model  # type: ignore
 from typing import Dict, Any, List
 import os
 import json
@@ -35,8 +35,7 @@ class Enginne():
                         function_name: str,
                         params: str) -> Dict[str, Any]:
 
-        
-        element: Dict[str, str] =  self.__get_container()
+        element: Dict[str, str] = self.__get_container()
         element["prompt"] = prompt
         element["name"] = function_name
         element["parameters"] = params
@@ -44,7 +43,7 @@ class Enginne():
 
         return element
 
-    def __generate_output_file(self, called_function: str) -> None:
+    def __generate_output_file(self, called_function: Dict[str, Any]) -> None:
 
         path: str = self.parser.ouput
 
@@ -56,7 +55,8 @@ class Enginne():
 
         elapsed_time: float = end - start
         minutes, second = divmod(elapsed_time, 60)
-        rich.print(f"\nGeneration completed in: [green]{int(minutes)}m {int(second)}s[/]")
+        rich.print("\nGeneration completed in:"
+                   f"[green]{int(minutes)}m {int(second)}s[/]")
 
     def start_generation(self) -> None:
 

@@ -1,4 +1,4 @@
-from llm_sdk import Small_LLM_Model
+from llm_sdk import Small_LLM_Model  # type: ignore
 from typing import Dict, List, Any
 from enum import Enum
 import numpy as np
@@ -200,13 +200,36 @@ Your task:
 Read the user's request and extract the value of each required parameter.
 
 Rules:
-1. Return ONLY a JSON object.
-2. The JSON keys MUST be the parameter names listed in Required parameters.
-3. The values MUST match the required parameter types.
-4. Do not add parameters that are not listed.
-5. Do not add explanations, comments, or extra text.
-6. Extract values exactly from the user's request when possible.
-7. Do not invent values that are not present in the user's request.
+    - Generate ONLY the parameters.
+    - Use exactly the parameter names from the function.
+    - Extract values from the user prompt.
+    - Do not execute the function.
+    - Do not calculate the function result.
+    - Do not transform input values.
+
+    STRING PARAMETERS:
+    - Extract the original string exactly as it appears in
+              the user prompt.
+    - Do not reverse, modify, escape, or transform the string.
+    - Do not add or remove characters.
+    - Keep punctuation and spaces unchanged.
+
+    NUMBER PARAMETERS:
+    - Extract the original number from the user prompt.
+    - Do not calculate with the number.
+
+    REGEX PARAMETERS:
+    - Generate ONLY the regex pattern needed to match the
+        target described by the user.
+    - The regex must be the simplest exact pattern.
+    - Do not add parentheses.
+    - Do not add capturing groups.
+    - Do not add .* or other unnecessary characters.
+    - Do not add characters before or after the pattern.
+    - Do not copy the actual values found in the source string.
+    - Do not include the replacement value.
+    - Return the regex itself, not a larger expression.
+
 
 Examples:
 
@@ -222,14 +245,14 @@ Example 3
 Q: Replace all numbers in "Hello 34 I'm 233 years old" with NUMBERS
 A: {{"source_string": \
     "Hello 34 I'm 233 years old", \
-        "regex": "\\d+", "replacement": "NUMBERS"}}
+        "regex": "\d+", "replacement": "NUMBERS"}}
 
 Example 4
-Q: Replace all vowels in 'Programming is fun' with "$"
-A: {{source_string: \
+Q: Replace all vowels in 'Programming is fun' with "#"
+A: {{"source_string": \
     "Programming is fun", \
         "regex": "[aeiouAEIOU]" \
-            "replacement": "$"}}
+            "replacement": "#"}}
 
 User request:
 Q: {user_prompt}
