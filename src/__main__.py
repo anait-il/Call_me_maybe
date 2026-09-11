@@ -1,8 +1,8 @@
 try:
-    from validation_input import Parser
+    from .validation_input import Parser
     from llm_sdk import Small_LLM_Model  # type: ignore
     from pydantic import ValidationError
-    from engine import Enginne
+    from .engine import Enginne
 except KeyboardInterrupt as e:
     print(f"Error: {e}")
 

@@ -3,10 +3,10 @@ from typing import Dict, List, Any
 from enum import Enum
 import numpy as np
 from numpy.typing import NDArray
-from gen_integers import Integer
-from gen_boolean import Boolean
-from gen_number import Number
-from gen_strings import String
+from .gen_integers import Integer
+from .gen_boolean import Boolean
+from .gen_number import Number
+from .gen_strings import String
 
 
 class State(Enum):
@@ -85,7 +85,6 @@ class ParametersGenerator:
             self.generated_output += output
             prompt_tokens += np.array(self.__model.encode(output)).tolist()[0]
 
-        print(f"function param {self.generated_output}")
         return self.generated_output
 
     def __get_next_token(self,
@@ -187,6 +186,18 @@ class ParametersGenerator:
                 "prompt": "what is the sum of 1 and 2",
                 "name": "fn_add_numbers",
                 "parameters": {{"a": 1.0, "b": 2.0}}
+            }}
+
+            Exampe 2:
+            Prompt: "Replace all numbers in \"Hello 34 I'm 233 years old\" with NUMBERS"
+
+            Answer:
+            {{
+                "prompt": "Replace all numbers in \"Hello 34 I'm 233 years old\" with NUMBERS",
+                "name": "fn_substitute_string_with_regex",
+                "parameters": {{"source_string": "Hello 34 I'm 233 years old",
+                                "regex": "\\\d+",
+                                "replacement": "NUMBERS"}}
             }}
 
             User prompt: {user_prompt}

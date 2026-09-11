@@ -1,6 +1,6 @@
 import os
 import json
-from validation_classes import ParsingContent, ParsingDefinition
+from .validation_classes import ParsingContent, ParsingDefinition
 from pydantic import ValidationError
 from typing import Dict, Any, List
 from argparse import ArgumentParser
@@ -59,7 +59,7 @@ class Parser():
                       f"{e.errors()[0]['msg'].strip('Value error, ')}")
                 raise
             except ValueError as e:
-                print(e)
+                print(f"[Error]: {e}")
                 raise
 
         return data

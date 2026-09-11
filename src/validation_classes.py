@@ -141,7 +141,7 @@ class ParsingDefinition(BaseModel):
 
     def check_return_type(self, type: Dict[str, str]) -> None:
 
-        allowed_types = ["number", "integer", "string", "bool"]
+        allowed_types = ["number", "integer", "string", "boolean"]
 
         for key, value in type.items():
 

@@ -1,6 +1,6 @@
-from validation_input import Parser
-from function_name import FunctionName
-from function_parameters import ParametersGenerator
+from .validation_input import Parser
+from .function_name import FunctionName
+from .function_parameters import ParametersGenerator
 from llm_sdk import Small_LLM_Model  # type: ignore
 from typing import Dict, Any, List
 import os
@@ -43,10 +43,10 @@ class Enginne():
         try:
             element["parameters"] = json.loads(params)
         except JSONDecodeError as e:
-            print(f"[JsonError]: {e}")
+            print(f"[JsonError] LLM generated invalid json: {params}")
+            exit(1)
 
         self.my_container.append(element)
-        print(self.my_container)
 
         return element
 
@@ -56,7 +56,7 @@ class Enginne():
 
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(self.parser.ouput, "w") as f:
-            json.dump(called_function, f)
+            json.dump(called_function, f, indent=4)
 
     def __get_elapsed_time(self, end: float, start: float) -> None:
 
@@ -85,7 +85,6 @@ class Enginne():
                 func_name,
                 self.functions_definition)
             params: str = parameters_generation.generate_parameter()
-            print(f"engine {params}")
             output = self.__encapsulation(user_prompt, func_name, params)
             generated.append(output)
             print(output)

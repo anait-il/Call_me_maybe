@@ -13,9 +13,10 @@ FLAGS = --warn-return-any \
 		--check-untyped-defs
 
 run :
-	$(UV) run $(PY) $(MAIN)
+	$(UV) run $(PY) -m src
 
 install :
+	-pip install uv
 	@$(UV) sync
 
 debug :
