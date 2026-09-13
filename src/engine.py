@@ -39,7 +39,6 @@ class Enginne():
         element: Dict[str, Any] = self.__get_container()
         element["prompt"] = prompt
         element["name"] = function_name
-
         try:
             element["parameters"] = json.loads(params)
         except JSONDecodeError as e:
@@ -72,7 +71,7 @@ class Enginne():
         generated: List[Dict[str, Any]] = []
         for i, prompt in enumerate(self.parser.prompts):
 
-            rich.print(f"\nProcessing [green]{i+1}[/] function[gold]...[/]\n")
+            rich.print(f"\nFunction [green]{i+1}[/] processing[gold]...[/]\n")
             user_prompt = prompt['prompt']
             name_generation: FunctionName = FunctionName(
                 self.__model,

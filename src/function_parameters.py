@@ -196,7 +196,7 @@ class ParametersGenerator:
                 "prompt": "Replace all numbers in \"Hello 34 I'm 233 years old\" with NUMBERS",
                 "name": "fn_substitute_string_with_regex",
                 "parameters": {{"source_string": "Hello 34 I'm 233 years old",
-                                "regex": "\\\d+",
+                                "regex": "\d+",
                                 "replacement": "NUMBERS"}}
             }}
 

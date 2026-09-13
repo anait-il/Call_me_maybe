@@ -9,8 +9,6 @@ except KeyboardInterrupt as e:
 
 def main() -> None:
 
-    print("Hello from call-me-maybe!")
-
     # parse prompts and functions
     parser = Parser()
     parser.parsing_input_files()
@@ -26,7 +24,8 @@ def main() -> None:
 if __name__ == "__main__":
     try:
         main()
-    except (ValidationError, ValueError):
+    except (ValidationError, ValueError) as e:
+        print(e)
         exit(1)
     except (KeyboardInterrupt) as e:
         print(f"[Error]: {e}")

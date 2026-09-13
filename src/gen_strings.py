@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List
+from typing import List, Set
 from llm_sdk import Small_LLM_Model  # type: ignore
 import numpy as np
 from numpy.typing import NDArray
@@ -27,6 +27,13 @@ class String:
         self.__generated: str = ""
         self.__generated_tokens: List[int] = []
         self.__current_state: Fsm = Fsm.START
+        escaped = {
+            "\n": "\\n",
+            "\r": "\\r",
+            "\t": "\\t",
+            "\b": "\\b",
+            "\f": "\\f",
+            }
 
         while self.__current_state != Fsm.END:
 
@@ -37,23 +44,34 @@ class String:
             next_token: int = int(np.argmax(masked_logits))
 
             next_token_decode: str = self.__model.decode([next_token])
+            
+            for c in escaped:
+                if c in next_token_decode:
+                    next_token_decode = next_token_decode.replace(c, escaped[c])
 
             if "\"" in next_token_decode and self.__current_state == Fsm.CHAR:
-                index: int = next_token_decode.find("\"")
-                if self.__generated[index - 1] != "\\":
+
+                if self.__is_there_backslash(
+                    self.__generated + next_token_decode):
                     self.__current_state = Fsm.END
 
                     next_token_decode = next_token_decode.split('"')[0] + "\""
 
+            elif "\\" in next_token_decode:
+                next_token_decode = next_token_decode.replace("\\", "\\\\")
+
             elif self.__current_state == Fsm.START:
                 self.__current_state = Fsm.CHAR
+
 
             elif len(self.__generated) > len(self.user_prompt):
                 self.__current_state = Fsm.END
 
             self.__generated += next_token_decode
+            print(next_token_decode)
             self.__generated_tokens.append(next_token)
 
+        print(self.__generated)
         return self.__generated
 
     def __get_masked_logits(self,
@@ -73,7 +91,19 @@ class String:
         tokens: List[int] = []
 
         if state == Fsm.START:
-            tokens = np.array(self.__model.encode(" \"")).tolist()[0]
+            tokens = np.array(self.__model.encode("\"")).tolist()[0]
             return tokens
 
         return tokens
+
+    def __is_there_backslash(self, output: str) -> bool:
+
+        index: int = output.rfind("\"")
+        number_of_backslashes: int = 0
+        x: int = 1
+
+        while index - x > 0 and output[index - x] == "\\":
+            number_of_backslashes += 1
+            x += 1
+
+        return (number_of_backslashes % 2 == 0)

@@ -36,16 +36,16 @@ class Parser():
     def validate_prompt(self, file: str) -> List[Dict[str, str]]:
 
         if not os.path.getsize(file):
-            raise ValueError("[Error] empty file")
+            raise ValueError("[Error]: empty file")
         with open(file) as f:
             data = json.load(f)
             if not data:
                 raise ValueError(
-                    "[Error] in prompts file: Invalid data (empty list)")
+                    "[Error]: in prompts file: Invalid data (empty list)")
             for item in data:
                 if not item:
                     raise ValueError(
-                        "[Error] in prompts file: Invalid data (empty dict)")
+                        "[Error]: in prompts file: Invalid data (empty dict)")
 
         if not isinstance(data, list):
             data = [data]
@@ -74,6 +74,7 @@ class Parser():
             data = json.load(f)
             if not data:
                 raise ValueError(
+                    "[Error]:"
                     "Error in definitions file: Invalid data (empty list)")
 
             for item in data:

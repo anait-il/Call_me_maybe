@@ -20,13 +20,17 @@ class FunctionName:
             [np.array(self.model.encode(x))[0].tolist()
              for x in self.available_functions])
 
-    def set_allowed_ids(self, index: int) -> List[int]:
+    def set_allowed_ids(self, index: int, gen_tokens: List[int]) -> List[int]:
 
         ids: List[int] = []
 
         for tokens in self.functions_token:
-            if len(tokens) > index:
-                ids.append(tokens[index])
+
+            prefix_length: int = len(gen_tokens)
+
+            if tokens[:prefix_length] == gen_tokens:
+                if len(tokens) > index:
+                    ids.append(tokens[index])
 
         return ids
 
@@ -35,11 +39,12 @@ class FunctionName:
         output: str = ""
         tokens: List[int] = np.array(self.model.encode(
             self.build_prompt(self.prompt)))[0].tolist()
+        generated_tokens: List[int] = []
 
         for i in count():
             logits: List[float] = self.model.get_logits_from_input_ids(tokens)
             mask: NDArray = np.full_like(logits, float("-inf"))
-            allowed_ids: List[int] = self.set_allowed_ids(i)
+            allowed_ids: List[int] = self.set_allowed_ids(i, generated_tokens)
             mask[allowed_ids] = 0
             masked_logits: NDArray = mask + logits
             next_id: int = int(np.argmax(masked_logits))
@@ -51,6 +56,7 @@ class FunctionName:
                 break
 
             tokens.append(next_id)
+            generated_tokens.append(next_id)
 
         return output
 
