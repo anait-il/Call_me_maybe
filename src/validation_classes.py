@@ -1,31 +1,14 @@
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, model_validator, ConfigDict, Field
 from typing import Dict, List, Any
 
 
 class ParsingContent(BaseModel):
-    content: Dict[str, str]
 
-    @model_validator(mode="after")
-    def check(self) -> "ParsingContent":
-        for key, value in self.content.items():
-            if key != "prompt":
-                raise ValueError(
-                    f"Invalid prompt object: unexpected field '{key}'. "
-                    f"The only allowed field is 'prompt'."
-                )
+    model_config = ConfigDict(
+        extra="forbid"
+    )
 
-            if not isinstance(value, str):
-                raise ValueError(
-                    f"Invalid value for 'prompt': expected a string, "
-                    f"but got {type(value).__name__}."
-                )
-
-            if not value.strip():
-                raise ValueError(
-                    "Invalid value for 'prompt': the prompt cannot be empty."
-                )
-
-        return self
+    prompt: str = Field(min_length=1)
 
 
 class ParsingDefinition(BaseModel):
@@ -48,7 +31,7 @@ class ParsingDefinition(BaseModel):
                              "{name, description, parameters, return}")
 
         for key, value in self.content.items():
-
+  
             if key.lower() not in keys:
                 raise ValueError(
                     f"Invalid definition field '{key}': "

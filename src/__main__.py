@@ -1,11 +1,7 @@
-try:
-    from .validation_input import Parser
-    from llm_sdk import Small_LLM_Model  # type: ignore
-    from pydantic import ValidationError
-    from .engine import Enginne
-except KeyboardInterrupt as e:
-    print(f"Error: {e}")
-
+from .validation_input import Parser
+from llm_sdk import Small_LLM_Model  # type: ignore
+from pydantic import ValidationError
+from .engine import Enginne
 
 def main() -> None:
 
@@ -24,8 +20,9 @@ def main() -> None:
 if __name__ == "__main__":
     try:
         main()
-    except (ValidationError, ValueError) as e:
+    except (ValueError) as e:
         print(e)
-        exit(1)
+    # except Exception as e:
+    #     print(f"[Error]: {e}")
     except (KeyboardInterrupt) as e:
         print(f"[Error]: {e}")

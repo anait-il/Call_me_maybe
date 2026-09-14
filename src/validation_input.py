@@ -2,7 +2,7 @@ import os
 import json
 from .validation_classes import ParsingContent, ParsingDefinition
 from pydantic import ValidationError
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Tuple
 from argparse import ArgumentParser
 
 
@@ -22,7 +22,7 @@ class Parser():
             default="data/input/function_calling_tests.json")
         parser.add_argument(
             "--output",
-            default="data/output/function_calls.json")
+            default="data/output/function_calling_results.json")
         parser.add_argument(
             "--functions_definition",
             default="data/input/functions_definition.json")
@@ -38,29 +38,28 @@ class Parser():
         if not os.path.getsize(file):
             raise ValueError("[Error]: empty file")
         with open(file) as f:
-            data = json.load(f)
-            if not data:
-                raise ValueError(
-                    "[Error]: in prompts file: Invalid data (empty list)")
-            for item in data:
-                if not item:
-                    raise ValueError(
-                        "[Error]: in prompts file: Invalid data (empty dict)")
+            try:
+                data = json.load(f, object_pairs_hook=self.my_hook)
+            except ValueError as e:
+                raise ValueError(f"[JsonError]: {e}")
 
-        if not isinstance(data, list):
+        if not isinstance(data, list) and not isinstance(data, dict):
+            raise ValueError("[Error]: Invalid json data.")
+
+        data_type: str = data.__class__.__name__
+        if not data:
+            raise ValueError(
+                f"[Error] in prompts file: Invalid data (empty {data_type})")
+
+        if isinstance(data, dict):
             data = [data]
 
-        for cotent in data:
-            try:
-                ParsingContent(content=cotent)
-
-            except ValidationError as e:
-                print("[Error]: "
-                      f"{e.errors()[0]['msg'].strip('Value error, ')}")
-                raise
-            except ValueError as e:
-                print(f"[Error]: {e}")
-                raise
+        try:
+            for content in data:
+                ParsingContent.model_validate(content)
+        except ValidationError as e:
+            raise ValueError("[ValidationError]: "
+                    f"{e.errors()[0]['msg']}")
 
         return data
 
@@ -99,3 +98,13 @@ class Parser():
                 raise
 
         return data
+
+    def my_hook(self, pairs: List[Tuple[str, str]]) -> Dict[str, str]:
+
+        result: Dict[str, str] = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError(f"Dublicate keys '{key}'")
+            result[key] = value
+        
+        return result

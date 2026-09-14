@@ -177,34 +177,11 @@ class ParametersGenerator:
             Available functions:
             {function_definition}
 
-            Example:
-
-            Prompt: "what is the sum of 1 and 2"
-
-            Answer:
-            {{
-                "prompt": "what is the sum of 1 and 2",
-                "name": "fn_add_numbers",
-                "parameters": {{"a": 1.0, "b": 2.0}}
-            }}
-
-            Exampe 2:
-            Prompt: "Replace all numbers in \"Hello 34 I'm 233 years old\" with NUMBERS"
-
-            Answer:
-            {{
-                "prompt": "Replace all numbers in \"Hello 34 I'm 233 years old\" with NUMBERS",
-                "name": "fn_substitute_string_with_regex",
-                "parameters": {{"source_string": "Hello 34 I'm 233 years old",
-                                "regex": "\d+",
-                                "replacement": "NUMBERS"}}
-            }}
-
             User prompt: {user_prompt}
 
             JSON:
             {{
                 "prompt": {user_prompt},
                 "name": "'''{self.function_name}
-                "parameters": 
+                "parameters":
         """
