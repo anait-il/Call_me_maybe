@@ -70,20 +70,27 @@ class Parser():
 
         with open(file) as f:
 
-            data = json.load(f)
-            if not data:
-                raise ValueError(
-                    "[Error]:"
-                    "Error in definitions file: Invalid data (empty list)")
+            try:
+                data = json.load(f, object_pairs_hook=self.my_hook)
+            except ValueError as e:
+                    raise ValueError(f"[JsonError]: {e}")
 
-            for item in data:
+        if not isinstance(data, list) and not isinstance(data, dict):
+                    raise ValueError("[Error]: Invalid json data.")
 
-                if not item:
-                    raise ValueError(
-                        "Error in definitions file: Invalid data (empty dict)")
+        data_type: str = data.__class__.__name__
+        if not data:
+            raise ValueError(
+                "[Error]:"
+                f"Error in definitions file: Invalid data (empty {data_type})")
 
-        if not isinstance(data, list):
+        if isinstance(data, dict):
             data = [data]
+
+        for item in data:
+            if not item:
+                raise ValueError(
+                    "Error in definitions file: Invalid data (empty dict)")
 
         for content in data:
 
@@ -100,7 +107,7 @@ class Parser():
         return data
 
     def my_hook(self, pairs: List[Tuple[str, str]]) -> Dict[str, str]:
-
+        print(pairs)
         result: Dict[str, str] = {}
         for key, value in pairs:
             if key in result:

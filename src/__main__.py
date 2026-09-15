@@ -22,7 +22,7 @@ if __name__ == "__main__":
         main()
     except (ValueError) as e:
         print(e)
-    # except Exception as e:
-    #     print(f"[Error]: {e}")
+    except Exception as e:
+        print(f"[Error]: {e}")
     except (KeyboardInterrupt) as e:
         print(f"[Error]: {e}")
