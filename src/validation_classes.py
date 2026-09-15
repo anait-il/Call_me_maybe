@@ -12,6 +12,7 @@ class ParsingContent(BaseModel):
 
 
 class ParsingDefinition(BaseModel):
+
     content: Dict[str, Any]
 
     @model_validator(mode="after")

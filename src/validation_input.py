@@ -97,12 +97,10 @@ class Parser():
             try:
                 ParsingDefinition(content=content)
             except ValidationError as e:
-                print("[Error]: "
-                      f"{e.errors()[0]['msg'].split('Value error, ')[1]}")
-                raise
+                raise ValueError("[Error]: "
+                      f"{e.errors()[0]['msg']}")
             except ValueError as e:
-                print(f"[Error]: {e}")
-                raise
+                raise(f"[Error]: {e}")
 
         return data
 
