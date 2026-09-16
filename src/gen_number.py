@@ -6,23 +6,38 @@ from numpy.typing import NDArray
 
 
 class Fsm(Enum):
+    """Represent the states of number value generation."""
+
     DIGITS = 1
     ALPHANUM = 2
     END = 3
 
 
 class Number:
+    """Generate a number value using constrained decoding."""
 
     def __init__(self,
                  model: Small_LLM_Model,
                  building_prompt: List[int],
                  user_prompt: str) -> None:
+        """Initialize the number value generator.
+
+        Args:
+            model: Language model used for generation.
+            building_prompt: Tokenized prompt used as model input.
+            user_prompt: Original user request.
+        """
 
         self.__model: Small_LLM_Model = model
         self.building_prompt: List[int] = building_prompt
         self.user_prompt: str = user_prompt
 
     def generate_numbers(self) -> str:
+        """Generate a number value.
+
+        Returns:
+            The generated number value.
+        """
 
         self.__generated: str = ""
         self.__generated_tokens: List[int] = []
@@ -54,6 +69,14 @@ class Number:
         return self.__generated
 
     def __get_masked_logits(self, logits: List[float]) -> NDArray:
+        """Mask logits to allow only valid number tokens.
+
+        Args:
+            logits: Logits produced by the language model.
+
+        Returns:
+            Logits with invalid tokens masked.
+        """
 
         mask: NDArray = np.full_like(logits, float("-inf"))
         allowed_tokens: List[int] = self.__get_tokens(self.__current_state)
@@ -62,20 +85,33 @@ class Number:
         return mask + logits
 
     def __get_tokens(self, state: Fsm) -> List[int]:
+        """Get token IDs allowed in the current FSM state.
+
+        Args:
+            state: Current state of number generation.
+
+        Returns:
+            Token IDs allowed for the current state.
+        """
 
         tokens: List[int] = []
 
         if state == Fsm.DIGITS:
             for token in "-0123456789":
+
                 tokens += np.array(self.__model.encode(token)).tolist()[0]
+
             return tokens
 
         for token in "0123456789.,}":
 
             tokens += np.array(self.__model.encode(token)).tolist()[0]
+
         return tokens
 
     def __convert_to_float(self) -> None:
+        """Ensure the generated number has a decimal part."""
+
         if "." not in self.__generated:
             self.__generated += "."
             self.__generated += "0"
@@ -84,5 +120,14 @@ class Number:
             self.__generated += "0"
 
     def __my_encode(self, string: str) -> List[int]:
+        """Encode a string into token IDs.
+
+        Args:
+            string: Text to encode.
+
+        Returns:
+            Token IDs corresponding to the input string.
+        """
+
         return [int(token)
                 for token in np.array(self.__model.encode(string))[0]]

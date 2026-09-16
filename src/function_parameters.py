@@ -2,7 +2,6 @@ from llm_sdk import Small_LLM_Model  # type: ignore
 from typing import Dict, List, Any
 from enum import Enum
 import numpy as np
-from numpy.typing import NDArray
 from .gen_integers import Integer
 from .gen_boolean import Boolean
 from .gen_number import Number
@@ -10,6 +9,8 @@ from .gen_strings import String
 
 
 class State(Enum):
+    """Represent the states of the parameter-generation FSM."""
+
     START = 0
     KEY = 1
     COLON = 2
@@ -20,12 +21,21 @@ class State(Enum):
 
 
 class ParametersGenerator:
+    """Generate function parameters using constrained decoding."""
 
     def __init__(self,
                  model: Small_LLM_Model,
                  prompt: str,
                  function_name: str,
                  functions_definition: List[Dict[str, Any]]) -> None:
+        """Initialize the parameter generator.
+
+        Args:
+            model: Language model used for parameter generation.
+            prompt: User request used to generate parameters.
+            function_name: Name of the selected function.
+            functions_definition: Available function definitions.
+        """
 
         self.__model: Small_LLM_Model = model
         self.prompt: str = prompt
@@ -33,6 +43,14 @@ class ParametersGenerator:
         self.functions_definition: List[Dict[str, Any]] = functions_definition
 
     def __get_function_defintion_parameters(self) -> Dict[str, Dict[str, str]]:
+        """Get the parameters of the selected function.
+
+        Returns:
+            The parameter definitions of the selected function.
+
+        Raises:
+            ValueError: If the function name is not found.
+        """
 
         for function in self.functions_definition:
 
@@ -43,6 +61,11 @@ class ParametersGenerator:
                          f"must be one of '{self.functions_definition}'")
 
     def generate_parameter(self) -> str:
+        """Generate parameters in JSON format.
+
+        Returns:
+            A JSON string containing the generated parameters.
+        """
 
         self.generated_output: str = ""
         self.current_state: State = State.START
@@ -91,8 +114,17 @@ class ParametersGenerator:
                          state: State,
                          prompt_tokens: List[int],
                          parameters: Dict[str, Dict[str, str]]) -> str | None:
+        """Generate the next JSON component for the current state.
 
-        output: List[int] = []
+        Args:
+            state: Current state of the generation FSM.
+            prompt_tokens: Tokens generated so far.
+            parameters: Remaining parameter definitions.
+
+        Returns:
+            The next generated component, or None when generation ends.
+        """
+
         if state == State.KEY:
             if not parameters:
                 return None
@@ -108,6 +140,14 @@ class ParametersGenerator:
         return self.__get_allowed_ids()
 
     def __add_couts(self, current_key: str) -> str:
+        """Wrap a parameter name in JSON quotes.
+
+        Args:
+            current_key: Parameter name to quote.
+
+        Returns:
+            The quoted parameter name.
+        """
 
         text: str = ""
         text += "\""
@@ -116,6 +156,11 @@ class ParametersGenerator:
         return text
 
     def __get_allowed_ids(self) -> str:
+        """Get the JSON syntax token for the current FSM state.
+
+        Returns:
+            The JSON syntax token, or an empty string if none applies.
+        """
 
         if self.current_state == State.START:
             return "{"
@@ -132,6 +177,14 @@ class ParametersGenerator:
         return ""
 
     def __get_parameter_value(self, prompt_tokens: List[int]) -> str:
+        """Generate a parameter value according to its declared type.
+
+        Args:
+            prompt_tokens: Tokens used as input to the value generator.
+
+        Returns:
+            The generated parameter value.
+        """
 
         if self.current_value['type'] == "string":
             string = String(self.__model, prompt_tokens, self.prompt)
@@ -151,8 +204,17 @@ class ParametersGenerator:
 
         return ""
 
-    def __get_parameters_definition(self,
-                                    parameteres: Dict[str, Dict[str, str]]) -> Dict[str, str]:
+    def __get_parameters_definition(
+            self,
+            parameteres: Dict[str, Dict[str, str]]) -> Dict[str, str]:
+        """Extract parameter names and their types.
+
+        Args:
+            parameteres: Parameter definitions to process.
+
+        Returns:
+            A mapping of parameter names to their types.
+        """
 
         param: Dict[str, str] = {}
         for key, value in parameteres.items():
@@ -163,10 +225,21 @@ class ParametersGenerator:
     def __build_prompt(self,
                        user_prompt: str,
                        parameters: Dict[str, Dict[str, str]]) -> str:
+        """Build the prompt used for parameter generation.
 
-        function_definition: Dict[str, Dict[str, str]] = (
+        Args:
+            user_prompt: User request to process.
+            parameters: Parameters required by the selected function.
+
+        Returns:
+            A formatted prompt for parameter generation.
+        """
+
+        parameters_type: Dict[str, str] = (
+            self.__get_parameters_definition(parameters))
+        function_definition: Dict[str, Any] = (
             {self.function_name: {
-                "parameters": self.__get_parameters_definition(parameters)
+                "parameters": parameters_type
             }}
         )
 

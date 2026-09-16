@@ -2,8 +2,6 @@ PY = python3
 
 UV = uv
 
-FILES ?= *.py
-
 MAIN = main.py
 
 FLAGS = --warn-return-any \
@@ -27,5 +25,5 @@ clean :
 	@find . -type d -name ".mypy_cache" -exec rm -rf {} +
 
 lint :
-	@$(UV) run flake8 $(FILES)
-	@$(UV) run mypy $(FILES) $(FLAGS)
+	@$(UV) run flake8 .
+	@$(UV) run mypy . $(FLAGS)

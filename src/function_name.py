@@ -6,11 +6,20 @@ from llm_sdk import Small_LLM_Model  # type: ignore
 
 
 class FunctionName:
+    """Select a function name using constrained LLM generation."""
 
     def __init__(self,
                  model: Small_LLM_Model,
                  prompt: str,
                  functions_definition: List[Dict[str, Any]]) -> None:
+        """Initialize the function name generator.
+
+        Args:
+            model: Language model used for function selection.
+            prompt: User request used to select a function.
+            functions_definition: Available function definitions.
+        """
+
         self.model: Small_LLM_Model = model
         self.prompt: str = prompt
         self.functions_definition: List[Dict[str, Any]] = functions_definition
@@ -21,6 +30,15 @@ class FunctionName:
              for x in self.available_functions])
 
     def set_allowed_ids(self, index: int, gen_tokens: List[int]) -> List[int]:
+        """Get token IDs that can continue the current function name.
+
+        Args:
+            index: Current token position.
+            gen_tokens: Tokens generated so far.
+
+        Returns:
+            Token IDs allowed by the function-name constraints.
+        """
 
         ids: List[int] = []
 
@@ -32,13 +50,22 @@ class FunctionName:
                 if len(tokens) > index:
                     ids.append(tokens[index])
 
+        if gen_tokens in self.functions_token:
+            ids.extend(list(self.model.encode("\"")[0]))
+
         return ids
 
     def generate_function_name(self) -> str:
+        """Generate a function name using constrained decoding.
+
+        Returns:
+            The selected function name.
+        """
 
         output: str = ""
         tokens: List[int] = np.array(self.model.encode(
             self.build_prompt(self.prompt)))[0].tolist()
+        tokens += list(self.model.encode("\"")[0])
         generated_tokens: List[int] = []
 
         for i in count():
@@ -48,12 +75,11 @@ class FunctionName:
             mask[allowed_ids] = 0
             masked_logits: NDArray = mask + logits
             next_id: int = int(np.argmax(masked_logits))
-            output += self.model.decode([next_id])
-            if output in self.available_functions:
+
+            if self.model.decode([next_id]) == "\"":
                 break
 
-            if len(output) >= len(max(self.available_functions, key=len)):
-                break
+            output += self.model.decode([next_id])
 
             tokens.append(next_id)
             generated_tokens.append(next_id)
@@ -61,6 +87,14 @@ class FunctionName:
         return output
 
     def build_prompt(self, user_prompt: str) -> str:
+        """Build the function-selection prompt.
+
+        Args:
+            user_prompt: User request to include in the prompt.
+
+        Returns:
+            A formatted prompt for function selection.
+        """
 
         function_description = []
         for function in self.functions_definition:
@@ -86,4 +120,6 @@ Description of the functions:
 
 user request:
 {user_prompt}
+
+name: "'''
 """
